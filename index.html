@@ -1,0 +1,3437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#1d4ed8" />
+<title>NovaChat — Connect through words</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='30' r='26' fill='%231d4ed8'/><circle cx='22' cy='30' r='3.2' fill='white'/><circle cx='32' cy='30' r='3.2' fill='white'/><circle cx='42' cy='30' r='3.2' fill='white'/><path d='M26 52 L32 60 L38 52 Z' fill='%231d4ed8'/></svg>" />
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Phosphor Icons -->
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<style>
+  /* ---------- Design tokens ---------- */
+  :root{
+    --bg: #ddeeff;
+    --card: #f0f6ff;
+    --ink: #0b1b3a;
+    --ink-soft:#5b6b8c;
+    --muted:#9aa6c2;
+    --line:#e3eaf6;
+    --surface:#c9dcf6;
+    --surface-2:#bcd2f0;
+    --surface-border:#a8c2e8;
+    --brand:#1d4ed8;
+    --brand-2:#3b82f6;
+    --brand-glow: rgba(29,78,216,.35);
+    --good:#22c55e;
+    --warn:#f59e0b;
+    --bad:#ef4444;
+    --radius:16px;
+    --radius-lg:22px;
+    --shadow: 0 18px 40px -18px rgba(15,40,90,.25);
+    --transition: .25s cubic-bezier(.4,.0,.2,1);
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1000px 500px at 80% -10%, #c8dcff 0%, transparent 60%),
+      radial-gradient(800px 500px at -10% 100%, #b8d0ff 0%, transparent 55%),
+      radial-gradient(600px 400px at 50% 50%, #d8e8ff 0%, transparent 70%),
+      #e8f0ff;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+
+
+  /* ---------- Branded splash ---------- */
+  #splash {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 60%, #60a5fa 100%);
+    color: #fff;
+    transition: opacity .45s ease, transform .55s cubic-bezier(.4,0,.2,1);
+  }
+  #splash.hide { opacity: 0; transform: translateY(-12px); pointer-events: none; }
+  #splash::before, #splash::after {
+    content: ""; position: absolute; border-radius: 50%; pointer-events: none;
+    filter: blur(60px); opacity: .55;
+  }
+  #splash::before { width: 360px; height: 360px; background: #60a5fa; top: -120px; right: -120px; }
+  #splash::after  { width: 320px; height: 320px; background: #1e3a8a; bottom: -100px; left: -100px; }
+  .splash-logo-wrap {
+    width: 96px; height: 96px; border-radius: 28px;
+    background: rgba(255,255,255,.14);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 20px 50px -10px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.22);
+    animation: splashPulse 1.6s ease-in-out infinite;
+    position: relative; z-index: 1;
+  }
+  .splash-logo-wrap svg { width: 56px; height: 56px; }
+  .splash-title {
+    margin: 22px 0 4px; font-size: 26px; font-weight: 800; letter-spacing: -.5px;
+    position: relative; z-index: 1;
+  }
+  .splash-sub {
+    font-size: 14px; opacity: .82; font-weight: 500;
+    position: relative; z-index: 1;
+    transition: opacity .3s ease;
+  }
+  @keyframes splashPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 20px 50px -10px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.22), 0 0 0 0 rgba(255,255,255,.35); }
+    50%      { transform: scale(1.06); box-shadow: 0 20px 50px -10px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.32), 0 0 0 18px rgba(255,255,255,0); }
+  }
+
+  /* ---------- Offline banner & conn dot ---------- */
+  #offlineBanner{
+    position:fixed; top:0; left:0; right:0; z-index:80;
+    background:var(--bad); color:#fff; text-align:center;
+    padding:10px 14px; font-size:14px; font-weight:600;
+    transform:translateY(-100%); transition: transform .35s ease;
+  }
+  #offlineBanner.show{transform:translateY(0);}
+
+  /* ---------- App shell ---------- */
+  .app{
+    max-width:480px; margin:0 auto; padding:0 18px 40px;
+    min-height:100vh; display:flex; flex-direction:column;
+  }
+
+  /* ============================================================
+     TOP ISLAND (auth screen fixed floating bar)
+     ============================================================ */
+  .top-island {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 448px;
+    z-index: 210;
+    background: rgba(255,255,255,0.55);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    backdrop-filter: blur(28px) saturate(200%);
+    border: 1.5px solid rgba(255,255,255,0.80);
+    border-radius: 28px;
+    box-shadow:
+      0 8px 32px -8px rgba(29,78,216,.16),
+      0 2px 12px -2px rgba(29,78,216,.10),
+      0 0 0 1px rgba(255,255,255,.6) inset;
+    padding: 12px 16px 10px;
+    display: none; /* hidden by default; shown on auth pages */
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .top-island.visible { display: flex; }
+
+  /* Brand inside island */
+  .top-island .brand { margin-bottom: 0; }
+  .top-island .logo {
+    width: 44px; height: 44px; margin: 0 auto 6px;
+    border-radius: 14px;
+  }
+  .top-island .wordmark { font-size: 20px; }
+  .top-island .tagline { display: none; }
+  .top-island .tabs { margin: 6px 0 0; width: 100%; }
+
+  /* Push content below the fixed island */
+  .auth-spacer {
+    height: calc(140px + env(safe-area-inset-top, 0px));
+  }
+
+  /* Placeholder tab pages — full viewport, no scroll, same theme as profile */
+  .placeholder-page {
+    position: fixed; inset: 0; z-index: 140;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    background:
+      radial-gradient(ellipse 140% 60% at 80% -5%,  #60a5fa 0%, transparent 55%),
+      radial-gradient(ellipse 100% 50% at -10% 30%,  #3b82f6 0%, transparent 50%),
+      radial-gradient(ellipse 120% 55% at 50% 110%,  #2563eb 0%, transparent 55%),
+      radial-gradient(ellipse 80%  40% at 100% 80%,  #06b6d4 0%, transparent 45%),
+      linear-gradient(165deg, #1d6ffc 0%, #1e54e8 30%, #1743c8 60%, #1232a8 100%);
+    padding: 0 28px 80px;
+    text-align: center;
+  }
+  .placeholder-page.active { display: flex; }
+  .placeholder-page-title {
+    font-size: 26px; font-weight: 800; color: #fff;
+    margin: 0 0 10px; letter-spacing: -.4px;
+    text-shadow: 0 2px 12px rgba(0,0,0,.18);
+  }
+  .placeholder-page-sub {
+    font-size: 15px; color: rgba(255,255,255,.72); line-height: 1.6;
+    max-width: 270px;
+  }
+  .placeholder-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.18);
+    color: #fff;
+    border: 1.5px solid rgba(255,255,255,.35);
+    border-radius: 999px; padding: 6px 16px;
+    font-size: 11px; font-weight: 700; letter-spacing: .6px;
+    text-transform: uppercase; margin-bottom: 18px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 12px rgba(0,0,0,.12);
+  }
+  .card{
+    background: rgba(255,255,255,0.45);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-radius: var(--radius-lg);
+    border: 1.5px solid rgba(255,255,255,0.70);
+    padding: 26px 22px 28px;
+    box-shadow: 0 8px 32px -8px rgba(29,78,216,.14), 0 2px 8px rgba(0,0,0,.04);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ---------- Logo / header ---------- */
+  .brand{ text-align:center; margin-bottom:18px;}
+  .logo{
+    width:64px; height:64px; margin:4px auto 10px;
+    border-radius:50%;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 12px 24px -10px var(--brand-glow);
+    position:relative;
+  }
+  .logo::after{
+    content:""; position:absolute; bottom:-6px; left:50%;
+    width:14px; height:14px; transform:translateX(-50%) rotate(45deg);
+    background:var(--brand-2);
+    border-bottom-right-radius:3px;
+  }
+  .logo .dots{display:flex; gap:5px;}
+  .logo .dots span{width:7px; height:7px; border-radius:50%; background:#fff;}
+  .wordmark{font-size:30px; font-weight:800; letter-spacing:-.5px;}
+  .wordmark .accent{color:var(--brand);}
+  .tagline{color:var(--ink-soft); font-size:14px; margin-top:4px;}
+
+  /* ---------- Tab pill ---------- */
+  .tabs{
+    display:grid; grid-template-columns:1fr 1fr;
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.7);
+    padding:6px; border-radius:999px;
+    margin: 18px 0 22px; position:relative;
+    box-shadow: 0 4px 20px -8px rgba(29,78,216,.15);
+  }
+  .tab{
+    text-align:center; padding:12px 0; font-weight:700;
+    color:var(--ink-soft); border-radius:999px; cursor:pointer;
+    transition: color .25s;
+    z-index:2; user-select:none;
+  }
+  .tab.active{color:#fff;}
+  .tab-indicator{
+    position:absolute; top:6px; bottom:6px; width:calc(50% - 6px);
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    border-radius:999px;
+    box-shadow: 0 8px 18px -8px var(--brand-glow);
+    transition: transform .35s cubic-bezier(.4,.0,.2,1);
+    left:6px;
+  }
+  .tabs[data-active="signin"] .tab-indicator{transform:translateX(100%);}
+
+  /* ---------- Floating-label inputs ---------- */
+  .field{ position:relative; margin:14px 0; }
+  .field .label{
+    position:absolute; left:46px; top:50%; transform:translateY(-50%);
+    color:var(--muted); font-size:15px; pointer-events:none;
+    background:transparent; padding:0 4px;
+    transition: all .18s ease;
+  }
+  .field input{
+    width:100%; height:54px;
+    border: 1.5px solid rgba(255,255,255,0.7);
+    border-radius:14px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 0 44px 0 44px;
+    font-size:15px; color:var(--ink);
+    outline:none;
+    transition: border-color .2s, box-shadow .2s;
+    font-family:inherit;
+    box-shadow: 0 2px 12px -4px rgba(29,78,216,.12);
+  }
+  /* password fields with eye icon need extra right padding */
+  #su_pass, #si_pass{ padding-right: 50px; }
+  /* confirm password has both match-shield and eye icon */
+  #su_pass2{ padding-right: 82px; }
+  .field input:focus{
+    border-color:var(--brand);
+    box-shadow:0 0 0 4px rgba(29,78,216,.10);
+  }
+  .field input:focus + .label,
+  .field input:not(:placeholder-shown) + .label{
+    top:0; left:38px; font-size:11.5px; color:var(--brand);
+    background: rgba(255,255,255,0.95); transform:translateY(-50%);
+    font-weight:600; letter-spacing:.3px; text-transform:uppercase;
+  }
+  .field .ico{
+    position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    color:var(--muted); width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+    font-size:18px;
+  }
+  .field .right{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    color:var(--muted); cursor:pointer; user-select:none;
+    width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+    font-size:20px; border-radius:8px; transition: color .2s, background .2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .field .right:active{ background: #eef3ff; color: var(--brand); }
+  .field .optional{
+    position:absolute; right:8px; top:-8px;
+    background: rgba(255,255,255,0.95); padding:0 6px;
+    color:var(--muted); font-size:12px; font-weight:600;
+  }
+
+  /* ---------- Inline field errors ---------- */
+  .field-error {
+    font-size: 12px; font-weight: 600; color: var(--bad);
+    margin: -8px 4px 4px; min-height: 16px;
+    display: flex; align-items: center; gap: 4px;
+    opacity: 0; transform: translateY(-4px);
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .field-error.show {
+    opacity: 1; transform: translateY(0);
+  }
+  .field.has-error input {
+    border-color: var(--bad) !important;
+    box-shadow: 0 0 0 4px rgba(239,68,68,.10) !important;
+  }
+  .field.has-error .label { color: var(--bad) !important; }
+
+  /* ---------- Button shake ---------- */
+  @keyframes btnShake {
+    0%,100%{ transform: translateX(0); }
+    20%{ transform: translateX(-6px); }
+    40%{ transform: translateX(6px); }
+    60%{ transform: translateX(-4px); }
+    80%{ transform: translateX(4px); }
+  }
+  .btn.shaking { animation: btnShake .4s ease; }
+
+  /* ---------- Success banner ---------- */
+  .success-banner {
+    display: none; align-items: center; gap: 10px;
+    background: #f0fdf4; border: 1.5px solid #bbf7d0;
+    border-radius: 14px; padding: 14px 16px; margin-top: 14px;
+    font-size: 14px; font-weight: 600; color: #166534;
+  }
+  .success-banner.show { display: flex; }
+  .success-banner i { font-size: 20px; color: var(--good); flex-shrink: 0; }
+
+  /* ---------- Strength bar ---------- */
+  .strength{height:6px; border-radius:6px; background:#eef2fa; margin:8px 4px 0; overflow:hidden;}
+  .strength > div{height:100%; width:0%; transition: width .3s, background .3s;}
+  .strength-label{font-size:12px; color:var(--muted); margin:6px 4px 0; min-height:14px;}
+
+  /* ---------- Match shield ---------- */
+  .match-shield{
+    position:absolute; right:48px; top:50%; transform:translateY(-50%);
+    color:var(--muted); transition:color .25s; font-size:18px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .match-shield.match{color:var(--good); animation: bounce .5s;}
+  @keyframes bounce{
+    0%{transform:translateY(-50%) scale(.6);}
+    50%{transform:translateY(-50%) scale(1.25);}
+    100%{transform:translateY(-50%) scale(1);}
+  }
+
+  /* ---------- Terms checkbox ---------- */
+  .terms{display:flex; gap:10px; align-items:flex-start; margin:14px 2px 4px; font-size:14px; color:var(--ink-soft);}
+  .terms input{ accent-color: var(--brand); width:18px; height:18px; margin-top:2px; flex-shrink:0;}
+  .terms a{color:var(--brand); font-weight:600; text-decoration:none;}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    width:100%; height:54px; border:none; border-radius:14px;
+    font-size:16px; font-weight:700; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    color:#fff; margin-top:18px;
+    box-shadow: 0 14px 28px -14px var(--brand-glow);
+    transition: transform .15s, box-shadow .25s, opacity .25s, filter .25s;
+    font-family:inherit;
+  }
+  .btn:active{transform: translateY(1px);}
+  .btn.dim{opacity:.55; filter:grayscale(.3); box-shadow:none;}
+  .btn.glow{ box-shadow: 0 18px 40px -12px var(--brand-glow), 0 0 0 0 var(--brand-glow); animation: glowPulse 2s infinite;}
+  @keyframes glowPulse{
+    0%,100%{ box-shadow: 0 18px 40px -12px var(--brand-glow);}
+    50%{ box-shadow: 0 18px 50px -8px rgba(29,78,216,.55);}
+  }
+  .btn[disabled]{cursor:not-allowed;}
+
+  .divider{
+    display:flex; align-items:center; gap:12px;
+    margin:22px 4px 14px; color:var(--muted); font-size:13px;
+  }
+  .divider::before, .divider::after{
+    content:""; flex:1; height:1px;
+    background: linear-gradient(to right, transparent, var(--line), transparent);
+  }
+
+  /* ---------- Social buttons ---------- */
+  .social{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .social button{
+    height:48px; border-radius:999px; border:1.5px solid var(--line);
+    background:#fff; font-weight:600; color:var(--ink);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    cursor:pointer; transition: border-color .2s, transform .15s;
+    font-family:inherit; font-size:14px;
+  }
+  .social button:hover{ border-color:var(--brand);}
+  .social button:active{ transform: translateY(1px);}
+  .social svg{width:18px; height:18px;}
+
+  .footer-link{ text-align:center; margin-top:18px; font-size:14px; color:var(--ink-soft);}
+  .footer-link a{ color:var(--brand); font-weight:600; text-decoration:none; cursor:pointer;}
+  .forgot{display:block; text-align:right; margin-top:6px; font-size:13px; color:var(--brand); font-weight:600; cursor:pointer;}
+
+  /* ---------- Caps lock warning ---------- */
+  .caps-warn{
+    position:absolute; right:52px; top:50%; transform:translateY(-50%);
+    color:var(--warn); font-size:11px; font-weight:700;
+    background:#fff7ed; border:1px solid #fed7aa; padding:2px 6px; border-radius:8px;
+    display:none; white-space:nowrap; pointer-events:none;
+  }
+  .caps-warn.show{display:inline-block;}
+
+  /* ---------- OTP boxes ---------- */
+  .otp{
+    display:flex; gap:8px; justify-content:center; margin:22px 0 6px;
+  }
+  .otp input{
+    width: clamp(32px, 10vw, 44px);
+    height: clamp(42px, 13vw, 56px);
+    border-radius:12px;
+    border:1.5px solid var(--line); background:#fff;
+    text-align:center;
+    font-size: clamp(16px, 5vw, 22px);
+    font-weight:700; color:var(--ink);
+    outline:none; transition: border-color .2s, transform .15s, box-shadow .2s, background .2s;
+    font-family:inherit; caret-color: transparent;
+  }
+  .otp input:focus{
+    border-color:var(--brand);
+    box-shadow:0 0 0 3px rgba(29,78,216,.12);
+    transform: translateY(-2px);
+    background: #f5f8ff;
+  }
+  .otp input.filled{
+    border-color: var(--brand-2);
+    background: #eef3ff;
+    color: var(--brand);
+  }
+  .otp.shake{ animation: shake .45s; }
+  .otp.shake input{ border-color: var(--bad); color: var(--bad); background: #fff5f5;}
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    20%{transform:translateX(-8px);} 40%{transform:translateX(8px);}
+    60%{transform:translateX(-6px);} 80%{transform:translateX(6px);}
+  }
+  .resend{ text-align:center; margin-top:14px; font-size:14px; color:var(--ink-soft);}
+  .resend b{ color:var(--brand); cursor:pointer;}
+  .resend b.disabled{ color:var(--muted); cursor:not-allowed;}
+
+  /* ---------- Loading logo overlay ---------- */
+  .loader-overlay{
+    position:absolute; inset:0;
+    background: rgba(255,255,255,.78);
+    backdrop-filter: blur(6px);
+    display:none; align-items:center; justify-content:center;
+    z-index:10; border-radius:var(--radius-lg);
+  }
+  .loader-overlay.show{display:flex;}
+  .loader-logo{
+    width:80px; height:80px; border-radius:50%;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    display:flex; align-items:center; justify-content:center; gap:5px;
+    animation: pulse 1.1s infinite ease-in-out;
+    box-shadow: 0 18px 40px -10px var(--brand-glow);
+  }
+  .loader-logo span{width:9px; height:9px; border-radius:50%; background:#fff;}
+  @keyframes pulse{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.25);}
+  }
+
+  /* ---------- Page slide system ---------- */
+  .stage{ position:relative; }
+  .page{
+    position:absolute; inset:0;
+    transition: transform .45s cubic-bezier(.4,.0,.2,1), opacity .35s;
+    opacity:0; pointer-events:none;
+    transform: translateX(40px);
+  }
+  .page.active{ position:relative; transform: translateX(0); opacity:1; pointer-events:auto;}
+  .page.exit-left{ transform: translateX(-40px); opacity:0;}
+  .page.enter-right{ transform: translateX(40px); opacity:0;}
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed; top: -120px; left:50%; transform: translateX(-50%);
+    background:var(--ink); color:#fff;
+    padding:12px 18px 12px 14px; border-radius:14px;
+    font-size:14px; font-weight:600;
+    box-shadow:0 18px 40px -12px rgba(0,0,0,.35);
+    transition: top .35s cubic-bezier(.34,1.4,.64,1);
+    z-index:9000; max-width: 90%;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show{ top: calc(18px + env(safe-area-inset-top, 0px));}
+  .toast.bad{ background:var(--bad);}
+  .toast.good{ background:var(--good);}
+  .toast-icon { font-size: 18px; flex-shrink: 0; }
+
+  /* ---------- Duplicate email popup ---------- */
+  .email-popup-overlay {
+    position: fixed; inset: 0; z-index: 8000;
+    background: rgba(11,27,58,.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s ease;
+  }
+  .email-popup-overlay.show { opacity: 1; pointer-events: auto; }
+  .email-popup {
+    background: #fff; border-radius: 20px;
+    padding: 28px 24px 22px;
+    max-width: 340px; width: 100%;
+    box-shadow: 0 24px 60px -12px rgba(11,27,58,.4);
+    text-align: center;
+    transform: scale(.88) translateY(12px);
+    transition: transform .35s cubic-bezier(.34,1.4,.64,1);
+  }
+  .email-popup-overlay.show .email-popup { transform: scale(1) translateY(0); }
+  .email-popup-icon {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: #fff0f0; margin: 0 auto 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: var(--bad);
+  }
+  .email-popup-title { font-size: 18px; font-weight: 800; color: var(--ink); margin: 0 0 8px; }
+  .email-popup-body { font-size: 14px; color: var(--ink-soft); line-height: 1.55; margin: 0 0 20px; }
+  .email-popup-body strong { color: var(--ink); }
+  .email-popup-actions { display: flex; flex-direction: column; gap: 10px; }
+  .email-popup-btn-primary {
+    height: 48px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    color: #fff; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 8px 20px -8px var(--brand-glow);
+    transition: transform .15s, opacity .2s;
+  }
+  .email-popup-btn-primary:active { transform: scale(.98); }
+  .email-popup-btn-secondary {
+    height: 44px; border: 1.5px solid var(--line); border-radius: 12px;
+    background: transparent; color: var(--ink-soft);
+    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: border-color .2s, color .2s;
+  }
+  .email-popup-btn-secondary:hover { border-color: var(--brand); color: var(--brand); }
+  .reset-choice{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0 6px;}
+  .reset-choice button{
+    height:50px; border-radius:14px; border:1.5px solid var(--line); background:#fff;
+    font-weight:700; color:var(--ink-soft); cursor:pointer; font-family:inherit;
+    transition: all .2s; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .reset-choice button.active{
+    border-color: var(--brand); color: var(--brand); background: #eef3ff;
+  }
+
+  .back-btn{
+    display:inline-flex; align-items:center; gap:7px;
+    background: rgba(255,255,255,0.85);
+    border: 1.5px solid var(--line);
+    color:var(--brand); border-radius:999px; cursor:pointer;
+    font-size:14px; font-weight:700; font-family:inherit;
+    padding: 8px 16px 8px 10px;
+    margin-bottom: 18px;
+    align-self: flex-start;
+    transition: background .18s, border-color .18s;
+    box-shadow: 0 2px 8px -2px rgba(29,78,216,.12);
+  }
+  .back-btn i { font-size:18px; }
+  .back-btn:active { background: #eef3ff; border-color: var(--brand); }
+
+  /* Reset page full-screen centered layout */
+  #page-reset, #page-otp {
+    display: flex; flex-direction: column;
+  }
+
+  /* ---------- Logged-in state ---------- */
+  #page-home{
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:center; text-align:center; padding:30px 10px;
+  }
+  .home-avatar{
+    width:80px; height:80px; border-radius:50%;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:36px; color:#fff; margin-bottom:18px;
+    box-shadow: 0 12px 28px -10px var(--brand-glow);
+  }
+  .home-name{ font-size:22px; font-weight:800; margin-bottom:6px;}
+  .home-email{ font-size:14px; color:var(--ink-soft); margin-bottom:24px;}
+  .btn-outline{
+    width:100%; height:48px; border:1.5px solid var(--line); border-radius:14px;
+    background:#fff; color:var(--ink-soft); font-size:15px; font-weight:700;
+    cursor:pointer; font-family:inherit; display:flex; align-items:center;
+    justify-content:center; gap:8px; transition: border-color .2s, color .2s;
+    margin-top:0;
+  }
+  .btn-outline:hover{ border-color:var(--bad); color:var(--bad);}
+
+  .copyright{ text-align:center; color:var(--muted); font-size:12px; margin-top:18px;}
+
+  /* ============================================================
+     PROFILE PAGE STYLES
+     ============================================================ */
+
+  /* --- Profile page shell (light, unwrapped) --- */
+  #page-profile {
+    display: flex; flex-direction: column;
+    min-height: 100vh; padding: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
+  /* --- Top bar: floating island (matches #tab-island) --- */
+  .prof-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    backdrop-filter: blur(28px) saturate(200%);
+    border: 1.5px solid rgba(255,255,255,0.80);
+    box-shadow:
+      0 8px 32px -8px rgba(29,78,216,.18),
+      0 2px 12px -2px rgba(29,78,216,.10),
+      0 0 0 1px rgba(255,255,255,.6) inset;
+    padding: 8px 10px 8px 8px;
+    border-radius: 28px;
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    left: 50%; right: auto;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 440px;
+    z-index: 220;
+  }
+  .prof-topbar-center {
+    font-size: 17px; font-weight: 800; color: var(--ink); letter-spacing: -.2px;
+  }
+  .prof-topbar-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(29,78,216,.10); color: var(--brand); font-size: 19px;
+    transition: background var(--transition);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .prof-topbar-btn:active { background: rgba(29,78,216,.20); }
+  #profSaveBtn {
+    display: none; height: 34px; padding: 0 16px;
+    border-radius: 999px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+    color: #fff; font-size: 14px; font-weight: 700;
+    font-family: inherit; transition: transform .15s, opacity .2s;
+    box-shadow: 0 6px 18px -4px rgba(59,130,246,.55);
+    -webkit-tap-highlight-color: transparent;
+  }
+  #profSaveBtn:active { transform: scale(.96); }
+  #profSaveBtn .save-dots { display: none; gap: 4px; align-items: center; }
+  #profSaveBtn .save-dots span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--brand);
+    animation: pulse 1s infinite ease-in-out;
+  }
+  #profSaveBtn .save-dots span:nth-child(2) { animation-delay: .18s; }
+  #profSaveBtn .save-dots span:nth-child(3) { animation-delay: .36s; }
+
+  /* --- Hero section: full-width gradient, flush --- */
+  .prof-hero {
+    background: linear-gradient(160deg, var(--brand) 0%, var(--brand-2) 100%);
+    border: none;
+    border-radius: 0 0 28px 28px;
+    margin: 0;
+    padding: calc(82px + env(safe-area-inset-top, 0px)) 24px 28px;
+    text-align: center;
+    opacity: 0; transform: translateY(0);
+    animation: profCardIn 300ms cubic-bezier(.4,0,.2,1) forwards;
+    animation-delay: 60ms;
+    position: relative; overflow: hidden;
+  }
+  .prof-hero::after {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 80% 20%, rgba(255,255,255,.15) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 10% 80%, rgba(29,78,216,.3) 0%, transparent 55%);
+    pointer-events: none;
+  }
+  .prof-avatar-wrap {
+    position: relative; width: 90px; height: 90px; margin: 0 auto 14px;
+  }
+  .prof-avatar {
+    width: 90px; height: 90px; border-radius: 50%;
+    background: linear-gradient(135deg, #3b6be8, #6ba3ff);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 800; color: #fff;
+    border: 3px solid rgba(255,255,255,.6);
+    box-shadow: 0 8px 28px -8px rgba(0,0,0,.35);
+    overflow: hidden; position: relative;
+  }
+  .prof-avatar img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: opacity 300ms ease, transform 300ms ease;
+  }
+  .prof-avatar-initials { user-select: none; }
+  .prof-online-dot {
+    position: absolute; top: 2px; right: 2px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--good); border: 2.5px solid white;
+    transition: opacity 300ms ease;
+  }
+  .prof-online-dot.hidden { opacity: 0; }
+  .prof-cam-btn {
+    position: absolute; bottom: 0; right: 0;
+    width: 26px; height: 26px; border-radius: 50%; border: 2px solid white;
+    background: var(--brand); color: #fff; cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    font-size: 14px; -webkit-tap-highlight-color: transparent;
+  }
+  .prof-cam-btn.visible { display: flex; }
+  /* SVG upload ring */
+  .prof-upload-ring {
+    position: absolute; inset: -4px; display: none;
+    pointer-events: none;
+  }
+  .prof-upload-ring.visible { display: block; }
+  .prof-upload-ring circle {
+    fill: none; stroke: #fff; stroke-width: 3;
+    stroke-dasharray: 283; stroke-dashoffset: 283;
+    transform-origin: center; transform: rotate(-90deg);
+    transition: stroke 300ms ease;
+  }
+  .prof-hero-name {
+    font-size: 20px; font-weight: 800; color: #fff; margin: 0 0 4px;
+    text-shadow: 0 1px 6px rgba(0,0,0,.2);
+  }
+  .prof-hero-handle {
+    font-size: 13px; color: rgba(255,255,255,.75); margin: 0 0 14px;
+  }
+  .prof-hero-handle.no-handle { font-style: italic; }
+
+  /* Verified badge */
+  .prof-verified-badge {
+    display: none;
+    align-items: center; justify-content: center;
+    color: #fff;
+    font-size: 18px;
+    filter: drop-shadow(0 1px 6px rgba(255,255,255,.6));
+    animation: badgePop .4s cubic-bezier(.4,0,.2,1);
+  }
+  .prof-verified-badge.show { display: flex; }
+  @keyframes badgePop {
+    0%   { transform: scale(0); opacity: 0; }
+    70%  { transform: scale(1.3); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  /* Completion bar */
+  .prof-completion-track {
+    height: 6px; background: rgba(255,255,255,.25);
+    border-radius: 6px; overflow: hidden; margin: 0 0 6px;
+  }
+  .prof-completion-fill {
+    height: 100%; width: 0%; background: rgba(255,255,255,.9);
+    border-radius: 6px;
+    transition: width 600ms cubic-bezier(.4,0,.2,1);
+  }
+  .prof-completion-label {
+    font-size: 12px; color: rgba(255,255,255,.75); text-align: left; font-weight: 600;
+  }
+
+  /* --- Section cards: full width with side padding on body --- */
+  .prof-section {
+    margin: 0 0 12px;
+    background: rgba(255,255,255,.55);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 20px -8px rgba(15,40,90,.14);
+    overflow: hidden;
+    opacity: 0; transform: translateY(16px);
+    animation: profCardIn 300ms cubic-bezier(.4,0,.2,1) forwards;
+    border: 1.5px solid rgba(255,255,255,.75);
+  }
+  @keyframes profCardIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .prof-section:nth-child(1) { animation-delay: 60ms; }
+  .prof-section:nth-child(2) { animation-delay: 120ms; }
+  .prof-section:nth-child(3) { animation-delay: 180ms; }
+  .prof-section:nth-child(4) { animation-delay: 240ms; }
+  .prof-section:nth-child(5) { animation-delay: 300ms; }
+  .prof-section:nth-child(6) { animation-delay: 360ms; }
+
+  .prof-section-label {
+    padding: 12px 16px 4px;
+    font-size: 11px; font-weight: 700; letter-spacing: .6px;
+    text-transform: uppercase; color: var(--brand);
+  }
+
+  /* --- Info rows --- */
+  .prof-row {
+    display: flex; align-items: center;
+    padding: 14px 16px; gap: 12px; cursor: pointer;
+    transition: background .15s; position: relative;
+  }
+  .prof-row:active { background: #f5f8ff; }
+  .prof-row + .prof-row { border-top: 1px solid var(--line); }
+  .prof-row-ico {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(29,78,216,.10); display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--brand); flex-shrink: 0;
+  }
+  .prof-row-body { flex: 1; min-width: 0; }
+  .prof-row-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .prof-row-value {
+    font-size: 15px; color: var(--ink); font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .prof-row-value.muted { color: var(--muted); font-weight: 400; font-style: italic; }
+  .prof-row-chevron { color: var(--muted); font-size: 18px; flex-shrink: 0; }
+
+
+  /* Inline per-row save button — now uses prof-soc-save style */
+  .prof-row-save { /* inherits from .prof-soc-save */ }
+
+  .prof-row-expand {
+    max-height: 0; overflow: hidden;
+    transition: max-height 300ms cubic-bezier(.4,0,.2,1), opacity 300ms ease;
+    opacity: 0; padding: 0 16px;
+  }
+  .prof-row-expand.open {
+    max-height: 140px; opacity: 1; padding: 0 16px 14px;
+  }
+  /* Basic info expand inner — identical to .prof-soc-panel-inner */
+  .prof-row-expand-inner {
+    background: rgba(255,255,255,.55); border-radius: 12px; padding: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+    border: 1px solid rgba(255,255,255,.7);
+  }
+  .prof-row.dimmed { opacity: .5; transition: opacity 200ms ease; }
+
+  /* --- Bio section --- */
+  .prof-bio-wrap { padding: 4px 16px 14px; }
+  .prof-bio-area {
+    width: 100%; min-height: 70px; max-height: 200px;
+    border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; font-size: 15px; color: var(--ink);
+    font-family: inherit; resize: none; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    background: #fff; overflow: hidden;
+  }
+  .prof-bio-area:focus { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(29,78,216,.1); }
+  .prof-bio-area:disabled {
+    border-color: transparent; background: transparent;
+    color: var(--ink); padding-left: 0; resize: none;
+  }
+  .prof-bio-counter {
+    text-align: right; font-size: 12px; color: var(--muted);
+    margin-top: 4px; font-weight: 600;
+    transition: color 300ms ease;
+  }
+  .prof-bio-counter.warn { color: var(--warn); }
+  .prof-bio-counter.bad { color: var(--bad); }
+
+  /* --- Social links section --- */
+  .prof-social-icons {
+    display: flex; gap: 10px; padding: 8px 16px 14px; justify-content: space-between;
+  }
+  .prof-soc-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--bg); border: 1.5px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--muted); cursor: pointer; position: relative;
+    transition: background .2s, border-color .2s, color .2s;
+    -webkit-tap-highlight-color: transparent;
+    flex: 1;
+  }
+  .prof-soc-btn.linked {
+    background: #eef3ff; border-color: var(--brand); color: var(--brand);
+  }
+  .prof-soc-tick {
+    position: absolute; top: -5px; right: -5px;
+    width: 13px; height: 13px; border-radius: 50%;
+    background: var(--good); border: 2px solid #fff;
+    display: none;
+  }
+  .prof-soc-btn.linked .prof-soc-tick { display: block; }
+  .prof-soc-panel {
+    max-height: 0; overflow: hidden; opacity: 0;
+    transition: max-height 300ms ease, opacity 250ms ease;
+    padding: 0 16px;
+  }
+  .prof-soc-panel.open {
+    max-height: 200px; opacity: 1; padding: 0 16px 14px;
+  }
+  .prof-soc-panel-inner {
+    background: rgba(255,255,255,.55); border-radius: 12px; padding: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+    border: 1px solid rgba(255,255,255,.7);
+  }
+  .prof-soc-input {
+    width: 100%; height: 40px; border: 1.5px solid var(--line);
+    border-radius: 10px; padding: 0 12px; font-size: 14px;
+    color: var(--ink); outline: none; font-family: inherit;
+    background: #fff;
+    transition: border-color .2s;
+  }
+  .prof-soc-input:focus { border-color: var(--brand); }
+  .prof-soc-actions { display: flex; gap: 8px; }
+  .prof-soc-save {
+    flex: 1; height: 34px; border-radius: 10px; border: none;
+    background: var(--brand); color: #fff; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    transition: opacity .2s;
+  }
+  .prof-soc-save:active { opacity: .8; }
+  .prof-soc-save.saved { background: var(--good); }
+  .prof-soc-save:disabled { opacity: .65; cursor: default; }
+  .prof-soc-save .row-save-dots {
+    display: none; gap: 4px; align-items: center;
+  }
+  .prof-soc-save .row-save-dots span {
+    width: 5px; height: 5px; border-radius: 50%; background: #fff;
+    animation: pulse 1s infinite ease-in-out;
+  }
+  .prof-soc-save .row-save-dots span:nth-child(2) { animation-delay: .18s; }
+  .prof-soc-save .row-save-dots span:nth-child(3) { animation-delay: .36s; }
+  .prof-soc-remove {
+    height: 34px; padding: 0 12px; border-radius: 10px;
+    border: 1.5px solid var(--line); background: #fff;
+    color: var(--bad); font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit; display: none;
+    transition: border-color .2s;
+  }
+  .prof-soc-remove.visible { display: block; }
+
+  /* card-flip keyframe */
+  @keyframes cardFlipOut {
+    0%  { transform: rotateY(0deg); }
+    100%{ transform: rotateY(90deg); }
+  }
+  @keyframes cardFlipIn {
+    0%  { transform: rotateY(90deg); }
+    100%{ transform: rotateY(0deg); }
+  }
+
+  /* --- Privacy section --- */
+  .prof-privacy-row {
+    display: flex; align-items: center;
+    padding: 14px 16px; gap: 12px;
+  }
+  .prof-privacy-row + .prof-privacy-row { border-top: 1px solid var(--line); }
+  .prof-privacy-body { flex: 1; }
+  .prof-privacy-label { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .prof-privacy-sub { font-size: 12px; color: var(--muted); margin-top: 2px; transition: opacity 150ms ease; }
+
+  /* Chip */
+  .prof-chip {
+    height: 28px; padding: 0 12px; border-radius: 999px;
+    border: 1.5px solid var(--brand); background: #eef3ff;
+    color: var(--brand); font-size: 12px; font-weight: 700;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+    transition: background .2s; -webkit-tap-highlight-color: transparent;
+  }
+  .prof-chip:active { background: #dce8ff; }
+
+  /* Toggle switch */
+  .prof-toggle {
+    width: 36px; height: 20px; border-radius: 999px;
+    background: var(--muted); position: relative; cursor: pointer;
+    transition: background 250ms ease; flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .prof-toggle.on { background: var(--brand); }
+  .prof-toggle::after {
+    content: ""; position: absolute;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #fff; top: 3px; left: 3px;
+    transition: left 250ms cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 1px 4px rgba(0,0,0,.25);
+  }
+  .prof-toggle.on::after { left: 19px; }
+
+  /* Online status card */
+  #profOnlineCard {
+    margin: 12px 16px 0;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 6px 22px -10px rgba(15,40,90,.18);
+    opacity: 0; transform: translateY(16px);
+    animation: profCardIn 300ms cubic-bezier(.4,0,.2,1) 360ms forwards;
+    border: 1px solid var(--surface-border);
+  }
+
+  /* Username availability indicator */
+  .prof-user-status {
+    position: absolute; right: 10px; top: 50%;
+    transform: translateY(-50%); font-size: 16px;
+    display: none;
+  }
+
+  /* Profile page content area (scrollable body) */
+  .prof-body {
+    padding: 10px 0 24px; display: flex; flex-direction: column; gap: 0;
+  }
+
+  /* Loader overlay for profile page */
+  #profLoader {
+    position: absolute; inset: 0; z-index: 30;
+    background: rgba(255,255,255,.85); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center;
+    border-radius: var(--radius-lg);
+  }
+  #profLoader.show { display: flex; }
+
+  /* Wiggle keyframe for bio counter */
+  @keyframes wiggle {
+    0%   { transform: rotate(0deg); }
+    25%  { transform: rotate(-2deg); }
+    75%  { transform: rotate(2deg); }
+    100% { transform: rotate(0deg); }
+  }
+
+  /* Profile page entry animation */
+  #page-profile.active .prof-hero,
+  #page-profile.active .prof-section,
+  #page-profile.active #profOnlineCard {
+    animation-play-state: running;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ============================================================
+     FLOATING ISLAND BOTTOM TAB BAR
+     ============================================================ */
+  #tab-island {
+    position: fixed;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 440px;
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    backdrop-filter: blur(28px) saturate(200%);
+    border: 1.5px solid rgba(255,255,255,0.80);
+    border-radius: 28px;
+    box-shadow:
+      0 8px 32px -8px rgba(29,78,216,.18),
+      0 2px 12px -2px rgba(29,78,216,.10),
+      0 0 0 1px rgba(255,255,255,.6) inset;
+    padding: 8px 8px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 200;
+  }
+  .tab-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    border: none; background: transparent;
+    font-size: 10px; font-weight: 800; color: #0b1b3a;
+    cursor: pointer; position: relative; padding: 8px 4px 6px;
+    border-radius: 18px; transition: color .22s ease;
+    font-family: inherit; letter-spacing: .3px;
+    -webkit-tap-highlight-color: transparent; flex: 1 1 0; min-width: 0;
+    isolation: isolate;
+  }
+  .tab-btn i {
+    font-size: 22px; transition: transform .25s cubic-bezier(.4,0,.2,1); display: block;
+    position: relative; z-index: 1; color: #0b1b3a;
+  }
+  .tab-btn span:not(.notif-badge) {
+    position: relative; z-index: 1; color: #0b1b3a;
+  }
+  /* Active highlight: underline dot only, icon+text go brand blue */
+  .tab-btn::after {
+    content: "";
+    position: absolute;
+    bottom: 5px; left: 50%;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--brand);
+    transform: translateX(-50%) scale(0);
+    opacity: 0;
+    transition: transform .25s cubic-bezier(.34,1.4,.64,1), opacity .2s ease;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .tab-btn:active i { transform: scale(.86); }
+  .tab-btn.active { color: var(--brand); }
+  .tab-btn.active i { color: var(--brand); }
+  .tab-btn.active span:not(.notif-badge) { color: var(--brand); }
+  .tab-btn.active::after {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  .notif-badge {
+    position: absolute; top: 4px; right: calc(50% - 18px);
+    width: 8px; height: 8px; background: var(--bad);
+    border-radius: 50%; border: 2px solid #fff;
+    transition: transform .2s ease, opacity .2s ease;
+    z-index: 2;
+  }
+  .notif-badge.hidden { transform: scale(0); opacity: 0; }
+
+  /* ============================================================
+     PROFILE PAGE — light, unwrapped, floating islands
+     ============================================================ */
+  #page-profile {
+    position: fixed !important; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 150;
+    background:
+      radial-gradient(1000px 500px at 80% -10%, #c8dcff 0%, transparent 60%),
+      radial-gradient(800px 500px at -10% 100%, #b8d0ff 0%, transparent 55%),
+      radial-gradient(600px 400px at 50% 50%, #d8e8ff 0%, transparent 70%),
+      #e8f0ff;
+    overflow-y: auto; overflow-x: hidden;
+    transform: translateY(100%); opacity: 0;
+    transition: transform .45s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+    border-radius: 0; min-height: 100vh;
+    display: flex; flex-direction: column; padding: 0;
+    pointer-events: none;
+  }
+  #page-profile.active {
+    transform: translateY(0) !important; opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+  /* Push body content below hero and above bottom island */
+  #page-profile .prof-body {
+    padding: 16px 16px 120px;
+    display: flex; flex-direction: column;
+  }
+  #profLoader { background: rgba(232,240,255,.85); backdrop-filter: blur(10px); border-radius: 0; }
+</style>
+</head>
+<body>
+<!-- ===== Branded splash ===== -->
+<div id="splash" role="status" aria-label="Loading NovaChat">
+  <div class="splash-logo-wrap">
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="32" cy="30" r="26" fill="#fff"/>
+      <circle cx="22" cy="30" r="3.4" fill="#1d4ed8"/>
+      <circle cx="32" cy="30" r="3.4" fill="#1d4ed8"/>
+      <circle cx="42" cy="30" r="3.4" fill="#1d4ed8"/>
+      <path d="M26 52 L32 60 L38 52 Z" fill="#fff"/>
+    </svg>
+  </div>
+  <div class="splash-title">NovaChat</div>
+  <div class="splash-sub" id="splashSub">Connect through words</div>
+</div>
+
+<div id="offlineBanner">⚠️ You are offline. Reconnecting…</div>
+
+<div class="app">
+  <div class="card">
+
+    <!-- Top Island (fixed floating) -->
+    <div class="top-island visible" id="topIsland">
+      <!-- Brand -->
+      <div class="brand">
+        <div class="logo"><div class="dots"><span></span><span></span><span></span></div></div>
+        <div class="wordmark">Nova<span class="accent">Chat</span></div>
+        <div class="tagline">Connect through words. Pure conversation.</div>
+      </div>
+
+      <!-- Tabs (hidden on non-auth pages) -->
+      <div class="tabs" data-active="signup" id="tabs">
+        <div class="tab-indicator"></div>
+        <div class="tab active" data-go="signup">Sign Up</div>
+        <div class="tab" data-go="signin">Sign In</div>
+      </div>
+    </div>
+
+    <!-- Spacer so content starts below the fixed island -->
+    <div class="auth-spacer" id="authSpacer"></div>
+
+    <!-- Stage -->
+    <div class="stage" id="stage">
+
+      <!-- ===== SIGN UP ===== -->
+      <section class="page active" id="page-signup">
+        <div class="field" id="field-su_name">
+          <span class="ico"><i class="ph ph-user"></i></span>
+          <input id="su_name" type="text" placeholder=" " autocomplete="name" autocapitalize="words" />
+          <label class="label">Full Name</label>
+        </div>
+        <div class="field-error" id="err-su_name"><i class="ph ph-warning-circle"></i><span></span></div>
+        <div class="field" id="field-su_email">
+          <span class="ico"><i class="ph ph-envelope"></i></span>
+          <input id="su_email" type="email" placeholder=" " autocomplete="email" inputmode="email" />
+          <label class="label">Email Address</label>
+        </div>
+        <div class="field-error" id="err-su_email"><i class="ph ph-warning-circle"></i><span></span></div>
+        <div class="field" id="field-su_phone">
+          <span class="ico"><i class="ph ph-phone"></i></span>
+          <input id="su_phone" type="tel" placeholder=" " autocomplete="tel" inputmode="tel" />
+          <label class="label">Phone Number</label>
+          <span class="optional">Optional</span>
+        </div>
+        <div class="field" id="field-su_pass">
+          <span class="ico"><i class="ph ph-lock"></i></span>
+          <input id="su_pass" type="password" placeholder=" " autocomplete="new-password" />
+          <label class="label">Password</label>
+          <span class="right" data-peek="su_pass"><i class="ph ph-eye"></i></span>
+        </div>
+        <div class="strength"><div id="strBar"></div></div>
+        <div class="strength-label" id="strLabel"></div>
+        <div class="field-error" id="err-su_pass"><i class="ph ph-warning-circle"></i><span></span></div>
+
+        <div class="field" id="field-su_pass2">
+          <span class="ico"><i class="ph ph-shield-check"></i></span>
+          <input id="su_pass2" type="password" placeholder=" " autocomplete="new-password" />
+          <label class="label">Confirm Password</label>
+          <span class="match-shield" id="matchShield"><i class="ph ph-shield"></i></span>
+          <span class="right" data-peek="su_pass2"><i class="ph ph-eye"></i></span>
+        </div>
+        <div class="field-error" id="err-su_pass2"><i class="ph ph-warning-circle"></i><span></span></div>
+
+        <label class="terms">
+          <input type="checkbox" id="su_terms" />
+          <span>By checking this box, I agree to NovaChat's
+            <a href="#" onclick="return false;">Terms of Service</a> and
+            <a href="#" onclick="return false;">Privacy Policy</a>.
+          </span>
+        </label>
+        <div class="field-error" id="err-su_terms"><i class="ph ph-warning-circle"></i><span></span></div>
+
+        <button class="btn" id="btnSignup">
+          <i class="ph ph-user-circle-plus"></i> Create Account
+        </button>
+
+        <div class="divider">Or continue with</div>
+        <div class="social">
+          <button id="googleBtn" aria-label="Sign up with Google">
+            <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.6 6.3 29 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8c1.8-3.5 5.5-6 9.6-6 2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.6 6.3 29 4.5 24 4.5 16.4 4.5 9.9 8.7 6.3 14.7z"/><path fill="#4CAF50" d="M24 43.5c5 0 9.5-1.7 13-4.6l-6-5.1c-1.8 1.3-4.2 2.2-7 2.2-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39.1 16.2 43.5 24 43.5z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.7 2-2 3.7-3.7 5l6 5.1c-.4.4 6.4-4.7 6.4-14.1 0-1.2-.1-2.3-.4-3.5z"/></svg>
+            Google
+          </button>
+          <button id="appleBtn" aria-label="Sign up with Apple">
+            <svg viewBox="0 0 24 24" fill="#000"><path d="M16.4 12.5c0-2.7 2.2-4 2.3-4-1.3-1.8-3.2-2.1-3.9-2.1-1.7-.2-3.3 1-4.1 1-.9 0-2.2-1-3.6-1-1.9 0-3.6 1.1-4.5 2.7-1.9 3.3-.5 8.3 1.4 11 .9 1.3 2 2.8 3.4 2.7 1.4-.1 1.9-.9 3.5-.9s2.1.9 3.6.9c1.5 0 2.4-1.3 3.3-2.7 1-1.5 1.5-3 1.5-3.1-.1 0-2.9-1.1-2.9-4.5zM13.7 4.6c.7-.9 1.2-2.1 1.1-3.4-1.1.1-2.4.7-3.1 1.6-.7.8-1.3 2-1.1 3.3 1.2.1 2.4-.6 3.1-1.5z"/></svg>
+            Apple ID
+          </button>
+        </div>
+
+        <div class="footer-link">Already have an account? <a data-go="signin">Sign In</a></div>
+        <div class="loader-overlay" id="loader1"><div class="loader-logo"><span></span><span></span><span></span></div></div>
+      </section>
+
+      <!-- ===== OTP ===== -->
+      <section class="page" id="page-otp">
+        <button class="back-btn" data-go="signup" aria-label="Back"><i class="ph ph-arrow-left"></i> Back</button>
+        <div style="text-align:center; margin-bottom:4px;">
+          <h2 style="margin:0 0 6px; font-size:22px;">Verify your email</h2>
+          <p style="color:var(--ink-soft); margin:0 0 4px; font-size:14px;" id="otpHint">An 8-digit code was sent to your email. Enter it below to verify your account.</p>
+        </div>
+        <div class="otp" id="otpBoxes">
+          <input maxlength="1" inputmode="numeric" pattern="[0-9]*" type="text" autocomplete="one-time-code" />
+          <input maxlength="1" inputmode="numeric" pattern="[0-9]*" type="text" />
+          <input maxlength="1" inputmode="numeric" pattern="[0-9]*" type="text" />
+          <input maxlength="1" inputmode="numeric" pattern="[0-9]*" type="text" />
+          <input maxlength="1" inputmode="numeric" pattern="[0-9]*" type="text" />
+          <input maxlength="1" inputmode="numeric" pattern="[0-9]*" type="text" />
+          <input maxlength="1" inputmode="numeric" pattern="[0-9]*" type="text" />
+          <input maxlength="1" inputmode="numeric" pattern="[0-9]*" type="text" />
+        </div>
+        <div class="resend">Didn't get it? <b id="resendBtn" class="disabled">Resend in <span id="resendTimer">60</span>s</b></div>
+        <button class="btn" id="btnVerify">
+          <i class="ph ph-check-circle"></i> Verify & Create Account
+        </button>
+      </section>
+
+      <!-- ===== SIGN IN ===== -->
+      <section class="page" id="page-signin">
+        <div class="field" id="field-si_email">
+          <span class="ico"><i class="ph ph-envelope"></i></span>
+          <input id="si_email" type="email" placeholder=" " autocomplete="email" inputmode="email" />
+          <label class="label">Email Address</label>
+        </div>
+        <div class="field" id="field-si_pass">
+          <span class="ico"><i class="ph ph-lock"></i></span>
+          <input id="si_pass" type="password" placeholder=" " autocomplete="current-password" />
+          <label class="label">Password</label>
+          <span class="caps-warn" id="capsWarn">⇪ CAPS</span>
+          <span class="right" data-peek="si_pass"><i class="ph ph-eye"></i></span>
+        </div>
+        <div class="field-error" id="err-signin"><i class="ph ph-warning-circle"></i><span></span></div>
+        <a class="forgot" data-go="reset">Forgot password?</a>
+
+        <button class="btn dim" id="btnSignin" disabled>
+          <i class="ph ph-sign-in"></i> Sign In
+        </button>
+
+        <div class="divider">Or continue with</div>
+        <div class="social">
+          <button id="googleBtnSi" aria-label="Sign in with Google">
+            <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.6 6.3 29 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8c1.8-3.5 5.5-6 9.6-6 2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.6 6.3 29 4.5 24 4.5 16.4 4.5 9.9 8.7 6.3 14.7z"/><path fill="#4CAF50" d="M24 43.5c5 0 9.5-1.7 13-4.6l-6-5.1c-1.8 1.3-4.2 2.2-7 2.2-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39.1 16.2 43.5 24 43.5z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.7 2-2 3.7-3.7 5l6 5.1c-.4.4 6.4-4.7 6.4-14.1 0-1.2-.1-2.3-.4-3.5z"/></svg>
+            Google
+          </button>
+          <button id="appleBtnSi" aria-label="Sign in with Apple">
+            <svg viewBox="0 0 24 24" fill="#000"><path d="M16.4 12.5c0-2.7 2.2-4 2.3-4-1.3-1.8-3.2-2.1-3.9-2.1-1.7-.2-3.3 1-4.1 1-.9 0-2.2-1-3.6-1-1.9 0-3.6 1.1-4.5 2.7-1.9 3.3-.5 8.3 1.4 11 .9 1.3 2 2.8 3.4 2.7 1.4-.1 1.9-.9 3.5-.9s2.1.9 3.6.9c1.5 0 2.4-1.3 3.3-2.7 1-1.5 1.5-3 1.5-3.1-.1 0-2.9-1.1-2.9-4.5zM13.7 4.6c.7-.9 1.2-2.1 1.1-3.4-1.1.1-2.4.7-3.1 1.6-.7.8-1.3 2-1.1 3.3 1.2.1 2.4-.6 3.1-1.5z"/></svg>
+            Apple ID
+          </button>
+        </div>
+        <div class="footer-link">New to NovaChat? <a data-go="signup">Create account</a></div>
+      </section>
+
+      <!-- ===== PASSWORD RESET ===== -->
+      <section class="page" id="page-reset">
+        <button class="back-btn" data-go="signin" aria-label="Back"><i class="ph ph-arrow-left"></i> Back</button>
+        <div style="text-align:center; margin-bottom:14px;">
+          <h2 style="margin:0 0 4px; font-size:22px;">Reset password</h2>
+          <p style="color:var(--ink-soft); margin:0; font-size:14px;">Enter your email and we'll send a reset link.</p>
+        </div>
+        <div class="field" id="resetField">
+          <span class="ico"><i class="ph ph-envelope"></i></span>
+          <input id="rs_email" type="email" placeholder=" " inputmode="email" />
+          <label class="label">Email Address</label>
+        </div>
+        <button class="btn" id="btnSendReset">
+          <i class="ph ph-paper-plane-tilt"></i> Send Reset Link
+        </button>
+        <div class="field-error" id="err-reset" style="margin-top:8px;"><i class="ph ph-warning-circle"></i><span></span></div>
+        <!-- Confirmation message shown after sending -->
+        <div id="resetSentMsg" style="display:none; text-align:center; margin-top:22px; padding:18px; background:#f0fdf4; border-radius:14px; border:1.5px solid #bbf7d0;">
+          <i class="ph ph-check-circle" style="font-size:32px; color:var(--good); display:block; margin-bottom:8px;"></i>
+          <p style="margin:0; font-weight:700; color:#166534;">Reset link sent!</p>
+          <p style="margin:6px 0 0; font-size:13px; color:#166534;">Check your email and click the link to reset your password.</p>
+        </div>
+      </section>
+
+      <!-- ===== NEW PASSWORD (after reset link) ===== -->
+      <section class="page" id="page-newpass">
+        <div style="text-align:center; margin-top:6px;">
+          <h2 style="margin:0 0 4px;">Set new password</h2>
+          <p style="color:var(--ink-soft); margin:0 14px 10px; font-size:14px;">Choose a strong new password for your account.</p>
+        </div>
+        <div class="field">
+          <span class="ico"><i class="ph ph-lock-key"></i></span>
+          <input id="np_pass" type="password" placeholder=" " autocomplete="new-password" />
+          <label class="label">New Password</label>
+          <span class="right" data-peek="np_pass"><i class="ph ph-eye"></i></span>
+        </div>
+        <div class="strength"><div id="npStrBar"></div></div>
+        <div class="strength-label" id="npStrLabel"></div>
+        <div class="field">
+          <span class="ico"><i class="ph ph-lock-key"></i></span>
+          <input id="np_pass2" type="password" placeholder=" " autocomplete="new-password" />
+          <label class="label">Confirm New Password</label>
+          <span class="right" data-peek="np_pass2"><i class="ph ph-eye"></i></span>
+          <span class="match-shield" id="npMatchShield"><i class="ph ph-shield"></i></span>
+        </div>
+        <button class="btn glow" id="btnSetNewPass">
+          <i class="ph ph-check-circle"></i> Update Password
+        </button>
+      </section>
+
+      <!-- ===== HOME (logged in) ===== -->
+      <section class="page" id="page-home">
+        <div class="home-avatar"><i class="ph ph-chat-circle-dots"></i></div>
+        <div class="home-name" id="homeName">Welcome!</div>
+        <div class="home-email" id="homeEmail"></div>
+        <p style="color:var(--ink-soft); font-size:14px; margin:0 0 28px;">You're signed in to NovaChat. Your dashboard is coming soon.</p>
+        <button class="btn-outline" id="btnSignout">
+          <i class="ph ph-sign-out"></i> Sign Out
+        </button>
+      </section>
+
+      <!-- ===== PROFILE ===== -->
+      <section class="page" id="page-profile">
+
+        <!-- Top bar -->
+        <div class="prof-topbar">
+          <button class="prof-topbar-btn" id="profBackBtn" aria-label="Back">
+            <i class="ph ph-arrow-left"></i>
+          </button>
+          <span class="prof-topbar-center">Profile</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="prof-topbar-btn" id="profEditBtn" aria-label="Edit profile">
+              <i class="ph ph-pencil-simple"></i>
+            </button>
+            <button id="profSaveBtn" aria-label="Save profile">
+              <span id="profSaveBtnText">Save</span>
+              <span class="save-dots" id="profSaveDots">
+                <span></span><span></span><span></span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hero -->
+        <div class="prof-hero">
+          <!-- Avatar -->
+          <div class="prof-avatar-wrap">
+            <div class="prof-avatar" id="profAvatar">
+              <span class="prof-avatar-initials" id="profAvatarInitials">?</span>
+            </div>
+            <div class="prof-online-dot hidden" id="profOnlineDot"></div>
+            <button class="prof-cam-btn" id="profCamBtn" aria-label="Change photo">
+              <i class="ph ph-camera"></i>
+            </button>
+            <!-- SVG upload progress ring -->
+            <svg class="prof-upload-ring" id="profUploadRing" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" id="profRingCircle"/>
+            </svg>
+          </div>
+          <input type="file" id="profFileInput" accept="image/jpeg,image/png,image/webp" style="display:none;">
+
+          <div class="prof-hero-name" id="profHeroName">Loading…</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+            <div class="prof-hero-handle" id="profHeroHandle">@—</div>
+            <span class="prof-verified-badge" id="profVerifiedBadge" title="Email verified">
+              <i class="ph ph-seal-check"></i>
+            </span>
+          </div>
+
+          <!-- Completion bar -->
+          <div class="prof-completion-track">
+            <div class="prof-completion-fill" id="profCompFill"></div>
+          </div>
+          <div class="prof-completion-label" id="profCompLabel">Profile 0% complete</div>
+        </div>
+
+        <!-- Profile body (scrollable content) -->
+        <div class="prof-body">
+
+          <!-- Basic Info -->
+          <div class="prof-section" id="profBasicSection">
+            <div class="prof-section-label">Basic info</div>
+
+            <!-- Full name row -->
+            <div class="prof-row" id="profNameRow" data-field="full_name">
+              <div class="prof-row-ico"><i class="ph ph-user"></i></div>
+              <div class="prof-row-body">
+                <div class="prof-row-label">Full name</div>
+                <div class="prof-row-value" id="profNameVal">—</div>
+              </div>
+              <i class="ph ph-caret-right prof-row-chevron"></i>
+            </div>
+            <div class="prof-row-expand" id="profNameExpand">
+              <div class="prof-row-expand-inner">
+                <input class="prof-soc-input" id="profNameInput" type="text" placeholder="Your full name…" autocapitalize="words"/>
+                <div class="prof-soc-actions">
+                  <button class="prof-soc-save prof-row-save" data-row-save="full_name"><span class="row-save-text">Save</span><span class="row-save-dots"><span></span><span></span><span></span></span></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Username row -->
+            <div class="prof-row" id="profUserRow" data-field="username">
+              <div class="prof-row-ico"><i class="ph ph-at"></i></div>
+              <div class="prof-row-body">
+                <div class="prof-row-label">Username</div>
+                <div class="prof-row-value muted" id="profUserVal">Not set</div>
+              </div>
+              <i class="ph ph-caret-right prof-row-chevron"></i>
+            </div>
+            <div class="prof-row-expand" id="profUserExpand">
+              <div class="prof-row-expand-inner">
+                <div style="position:relative;">
+                  <input class="prof-soc-input" id="profUserInput" type="text" placeholder="your_username…" autocomplete="off" autocapitalize="none" spellcheck="false" style="padding-right:36px;"/>
+                  <span class="prof-user-status" id="profUserStatus" style="right:8px;"></span>
+                </div>
+                <div class="prof-soc-actions">
+                  <button class="prof-soc-save prof-row-save" data-row-save="username"><span class="row-save-text">Save</span><span class="row-save-dots"><span></span><span></span><span></span></span></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Location row -->
+            <div class="prof-row" id="profLocRow" data-field="location">
+              <div class="prof-row-ico"><i class="ph ph-map-pin"></i></div>
+              <div class="prof-row-body">
+                <div class="prof-row-label">Location</div>
+                <div class="prof-row-value muted" id="profLocVal">Not set</div>
+              </div>
+              <i class="ph ph-caret-right prof-row-chevron"></i>
+            </div>
+            <div class="prof-row-expand" id="profLocExpand">
+              <div class="prof-row-expand-inner">
+                <input class="prof-soc-input" id="profLocInput" type="text" placeholder="Your city or country…" autocapitalize="words"/>
+                <div class="prof-soc-actions">
+                  <button class="prof-soc-save prof-row-save" data-row-save="location"><span class="row-save-text">Save</span><span class="row-save-dots"><span></span><span></span><span></span></span></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Phone row -->
+            <div class="prof-row" id="profPhoneRow" data-field="phone_number">
+              <div class="prof-row-ico"><i class="ph ph-phone"></i></div>
+              <div class="prof-row-body">
+                <div class="prof-row-label">Phone number</div>
+                <div class="prof-row-value muted" id="profPhoneVal">Not added</div>
+              </div>
+              <i class="ph ph-caret-right prof-row-chevron"></i>
+            </div>
+            <div class="prof-row-expand" id="profPhoneExpand">
+              <div class="prof-row-expand-inner">
+                <input class="prof-soc-input" id="profPhoneInput" type="tel" placeholder="+1 234 567 8900…" inputmode="tel"/>
+                <div class="prof-soc-actions">
+                  <button class="prof-soc-save prof-row-save" data-row-save="phone_number"><span class="row-save-text">Save</span><span class="row-save-dots"><span></span><span></span><span></span></span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bio -->
+          <div class="prof-section" id="profBioSection">
+            <div class="prof-section-label">Bio</div>
+            <div class="prof-bio-wrap">
+              <textarea class="prof-bio-area" id="profBioArea"
+                placeholder="Write something about yourself…"
+                rows="3" disabled></textarea>
+              <div class="prof-bio-counter" id="profBioCounter" style="display:none;">0 / 160</div>
+            </div>
+          </div>
+
+          <!-- Social links -->
+          <div class="prof-section" id="profSocialSection">
+            <div class="prof-section-label">Social links</div>
+            <div class="prof-social-icons" id="profSocialIcons">
+              <button class="prof-soc-btn" data-platform="instagram" title="Instagram" aria-label="Instagram">
+                <i class="ph ph-instagram-logo"></i>
+                <span class="prof-soc-tick"></span>
+              </button>
+              <button class="prof-soc-btn" data-platform="x" title="X (Twitter)" aria-label="X">
+                <i class="ph ph-x-logo"></i>
+                <span class="prof-soc-tick"></span>
+              </button>
+              <button class="prof-soc-btn" data-platform="linkedin" title="LinkedIn" aria-label="LinkedIn">
+                <i class="ph ph-linkedin-logo"></i>
+                <span class="prof-soc-tick"></span>
+              </button>
+              <button class="prof-soc-btn" data-platform="tiktok" title="TikTok" aria-label="TikTok">
+                <i class="ph ph-tiktok-logo"></i>
+                <span class="prof-soc-tick"></span>
+              </button>
+              <button class="prof-soc-btn" data-platform="github" title="GitHub" aria-label="GitHub">
+                <i class="ph ph-github-logo"></i>
+                <span class="prof-soc-tick"></span>
+              </button>
+            </div>
+            <div class="prof-soc-panel" id="profSocPanel">
+              <div class="prof-soc-panel-inner">
+                <input class="prof-soc-input" id="profSocInput" type="url" placeholder="Paste your link here…" inputmode="url"/>
+                <div class="prof-soc-actions">
+                  <button class="prof-soc-save" id="profSocSave">Save link</button>
+                  <button class="prof-soc-remove" id="profSocRemove">Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Privacy -->
+          <div class="prof-section" id="profPrivacySection">
+            <div class="prof-section-label">Privacy</div>
+
+            <div class="prof-privacy-row">
+              <div class="prof-row-ico"><i class="ph ph-chat-circle"></i></div>
+              <div class="prof-privacy-body">
+                <div class="prof-privacy-label">Who can message me</div>
+                <div class="prof-privacy-sub" id="privMsgSub">Everyone</div>
+              </div>
+              <button class="prof-chip" id="privMsgChip">Everyone</button>
+            </div>
+
+            <div class="prof-privacy-row">
+              <div class="prof-row-ico"><i class="ph ph-eye"></i></div>
+              <div class="prof-privacy-body">
+                <div class="prof-privacy-label">Show last seen</div>
+                <div class="prof-privacy-sub" id="privSeenSub">Everyone</div>
+              </div>
+              <button class="prof-chip" id="privSeenChip">Everyone</button>
+            </div>
+
+            <div class="prof-privacy-row">
+              <div class="prof-row-ico"><i class="ph ph-phone"></i></div>
+              <div class="prof-privacy-body">
+                <div class="prof-privacy-label">Show phone number</div>
+                <div class="prof-privacy-sub" id="privPhoneSub">Hidden from others</div>
+              </div>
+              <div class="prof-toggle" id="privPhoneToggle"></div>
+            </div>
+          </div>
+
+          <!-- Online status -->
+          <div id="profOnlineCard">
+            <div class="prof-privacy-row">
+              <div class="prof-row-ico" style="background:#f0fdf4;">
+                <i class="ph ph-circle" style="color:var(--good);"></i>
+              </div>
+              <div class="prof-privacy-body">
+                <div class="prof-privacy-label">Online status</div>
+                <div class="prof-privacy-sub" id="onlineStatusSub">You appear online</div>
+              </div>
+              <div class="prof-toggle on" id="onlineToggle"></div>
+            </div>
+          </div>
+
+        </div><!-- /prof-body -->
+
+        <!-- Profile page loader -->
+        <div id="profLoader">
+          <div class="loader-logo"><span></span><span></span><span></span></div>
+        </div>
+
+      </section><!-- /page-profile -->
+
+    </div><!-- /stage -->
+    <div class="copyright">© 2026 NovaChat. All rights reserved.</div>
+  </div>
+</div>
+
+
+<!-- ===== PLACEHOLDER PAGES ===== -->
+<div class="placeholder-page" id="placeholder-chats">
+  <span class="placeholder-badge"><i class="ph ph-clock" style="font-size:13px;"></i> Coming Soon</span>
+  <div class="placeholder-page-title">Chats</div>
+  <div class="placeholder-page-sub">Your conversations will appear here. Stay tuned for the full messaging experience.</div>
+</div>
+
+<div class="placeholder-page" id="placeholder-discover">
+  <span class="placeholder-badge"><i class="ph ph-clock" style="font-size:13px;"></i> Coming Soon</span>
+  <div class="placeholder-page-title">Discover</div>
+  <div class="placeholder-page-sub">Explore people, communities, and trending topics — launching soon.</div>
+</div>
+
+<div class="placeholder-page" id="placeholder-notifications">
+  <span class="placeholder-badge"><i class="ph ph-clock" style="font-size:13px;"></i> Coming Soon</span>
+  <div class="placeholder-page-title">Notifications</div>
+  <div class="placeholder-page-sub">Your alerts and activity updates will show up here when the feature goes live.</div>
+</div>
+
+<!-- ===== FLOATING ISLAND TAB BAR ===== -->
+<nav id="tab-island" style="display:none;">
+  <button class="tab-btn" data-tab="chats" aria-label="Chats">
+    <i class="ph ph-chats"></i>
+    <span>Chats</span>
+  </button>
+  <button class="tab-btn" data-tab="discover" aria-label="Discover">
+    <i class="ph ph-compass"></i>
+    <span>Discover</span>
+  </button>
+  <button class="tab-btn" data-tab="notifications" aria-label="Notifications">
+    <i class="ph ph-bell"></i>
+    <span class="notif-badge" id="notifBadge"></span>
+    <span>Alerts</span>
+  </button>
+  <button class="tab-btn" data-tab="profile" aria-label="Profile">
+    <i class="ph ph-user-circle"></i>
+    <span>Profile</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<!-- Duplicate email popup -->
+<div class="email-popup-overlay" id="emailPopupOverlay">
+  <div class="email-popup">
+    <div class="email-popup-icon"><i class="ph ph-envelope-simple-x"></i></div>
+    <div class="email-popup-title">Email Already Registered</div>
+    <div class="email-popup-body">
+      An account with <strong id="emailPopupAddr"></strong> already exists.<br>
+      Would you like to sign in instead?
+    </div>
+    <div class="email-popup-actions">
+      <button class="email-popup-btn-primary" id="emailPopupSignIn">
+        <i class="ph ph-sign-in"></i> Sign In Instead
+      </button>
+      <button class="email-popup-btn-secondary" id="emailPopupDismiss">Try a Different Email</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =================== CONFIG =================== */
+const SUPABASE_URL = "https://akmwzymifytmuinbyeif.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QhVT2UQmI0_ZNg47vcs0eg_-jt4hP_A";
+
+/* =================== INIT =================== */
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* =================== HELPERS =================== */
+const $ = (s, p=document) => p.querySelector(s);
+const $$ = (s, p=document) => Array.from(p.querySelectorAll(s));
+
+function toast(msg, type=""){
+  const t = $("#toast");
+  // Pick icon based on type
+  const iconMap = {
+    "good": "ph-check-circle",
+    "bad":  "ph-warning-circle",
+    "":     "ph-info"
+  };
+  const iconClass = iconMap[type] || "ph-info";
+  t.innerHTML = `<i class="ph ${iconClass} toast-icon"></i><span>${msg}</span>`;
+  t.className = "toast show " + type;
+  clearTimeout(t._t);
+  t._t = setTimeout(()=> t.className = "toast " + type, 3000);
+}
+
+/* ---- Inline field errors ---- */
+function fieldError(errId, fieldId, msg) {
+  const errEl = $("#" + errId);
+  const fieldEl = fieldId ? $("#" + fieldId) : null;
+  if (msg) {
+    errEl.querySelector("span").textContent = msg;
+    errEl.classList.add("show");
+    if (fieldEl) fieldEl.classList.add("has-error");
+  } else {
+    errEl.classList.remove("show");
+    if (fieldEl) fieldEl.classList.remove("has-error");
+  }
+}
+
+function clearFieldErrors(...errIds) {
+  errIds.forEach(id => {
+    const el = $("#" + id);
+    if (el) {
+      el.classList.remove("show");
+      // clear parent field error state
+      const fieldId = id.replace("err-", "field-");
+      const fieldEl = $("#" + fieldId);
+      if (fieldEl) fieldEl.classList.remove("has-error");
+    }
+  });
+}
+
+function shakeBtn(btnEl) {
+  btnEl.classList.remove("shaking");
+  btnEl.offsetHeight; // reflow
+  btnEl.classList.add("shaking");
+  setTimeout(() => btnEl.classList.remove("shaking"), 400);
+}
+
+
+function vibrate(p=120){ if (navigator.vibrate) navigator.vibrate(p); }
+
+/* =================== PAGE NAV =================== */
+let current = "signup";
+function go(name){
+  if (name === current) return;
+  const from = $("#page-" + current);
+  const to   = $("#page-" + name);
+  if (!to) return;
+  // Show/hide tabs only on auth pages
+  const authPages = ["signup","signin"];
+  $("#tabs").style.display = authPages.includes(name) ? "" : "none";
+  to.classList.add("enter-right");
+  to.offsetHeight;
+  from.classList.remove("active");
+  from.classList.add("exit-left");
+  to.classList.remove("enter-right");
+  to.classList.add("active");
+  setTimeout(()=>{ from.classList.remove("exit-left"); }, 460);
+  current = name;
+  // Tab pill sync
+  const tabs = $("#tabs");
+  if (authPages.includes(name)) tabs.dataset.active = name;
+  $$(".tab", tabs).forEach(t => t.classList.toggle("active", t.dataset.go === name));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+document.addEventListener("click", e=>{
+  const el = e.target.closest("[data-go]");
+  if (el) go(el.dataset.go);
+});
+
+/* =================== TABS =================== */
+$$("#tabs .tab").forEach(t => t.addEventListener("click", () => go(t.dataset.go)));
+
+/* =================== PASSWORD PEEK =================== */
+document.addEventListener("pointerdown", e=>{
+  const el = e.target.closest("[data-peek]");
+  if (!el) return;
+  const inp = document.getElementById(el.dataset.peek);
+  if (inp) inp.type = "text";
+});
+document.addEventListener("pointerup", ()=>{
+  $$("[data-peek]").forEach(el=>{
+    const inp = document.getElementById(el.dataset.peek);
+    if (inp) inp.type = "password";
+  });
+});
+document.addEventListener("pointerleave", ()=>{
+  $$("[data-peek]").forEach(el=>{
+    const inp = document.getElementById(el.dataset.peek);
+    if (inp) inp.type = "password";
+  });
+});
+
+/* =================== STRENGTH BAR =================== */
+function strength(pwd){
+  let s = 0;
+  if (pwd.length >= 8) s++;
+  if (/[A-Z]/.test(pwd)) s++;
+  if (/[0-9]/.test(pwd)) s++;
+  if (/[^A-Za-z0-9]/.test(pwd)) s++;
+  if (pwd.length >= 12) s++;
+  return s;
+}
+function applyStrength(pwd, bar, label){
+  const s = strength(pwd);
+  const pct    = [0,20,40,60,80,100][s];
+  const colors = ["#eef2fa","#ef4444","#f59e0b","#eab308","#22c55e","#16a34a"];
+  const labels = ["","Too weak","Weak","Fair","Strong","Very strong"];
+  bar.style.width = pct + "%";
+  bar.style.background = colors[s];
+  label.textContent = labels[s];
+  label.style.color = colors[s] === "#eef2fa" ? "var(--muted)" : colors[s];
+}
+$("#su_pass").addEventListener("input", e => applyStrength(e.target.value, $("#strBar"), $("#strLabel")));
+
+/* =================== MATCH SHIELD =================== */
+function checkMatch(){
+  const a = $("#su_pass").value, b = $("#su_pass2").value;
+  const sh = $("#matchShield");
+  if (b && a === b){
+    sh.classList.add("match");
+    sh.innerHTML = '<i class="ph ph-shield-check" style="color:var(--good)"></i>';
+  } else {
+    sh.classList.remove("match");
+    sh.innerHTML = '<i class="ph ph-shield"></i>';
+  }
+}
+$("#su_pass").addEventListener("input", checkMatch);
+$("#su_pass2").addEventListener("input", checkMatch);
+
+/* =================== SMART SIGN-IN BTN =================== */
+function checkSignin(){
+  const ok = $("#si_email").value.trim() && $("#si_pass").value;
+  const b = $("#btnSignin");
+  b.disabled = !ok;
+  b.classList.toggle("dim", !ok);
+  b.classList.toggle("glow", !!ok);
+}
+$("#si_email").addEventListener("input", checkSignin);
+$("#si_pass").addEventListener("input", checkSignin);
+
+/* =================== CAPS LOCK WARN =================== */
+$("#si_pass").addEventListener("keydown", e=>{
+  const caps = e.getModifierState && e.getModifierState("CapsLock");
+  $("#capsWarn").classList.toggle("show", !!caps);
+});
+
+/* =================== OTP BOXES =================== */
+function bindOtp(container, onComplete){
+  const inputs = $$("input", container);
+  const OTP_LEN = inputs.length;
+
+  function getVal(){ return inputs.map(i=>i.value).join(""); }
+
+  function markFilled(inp){
+    inp.classList.toggle("filled", inp.value !== "");
+  }
+
+  inputs.forEach((inp, i) => {
+    // Only allow digits
+    inp.addEventListener("keypress", e=>{
+      if (!/[0-9]/.test(e.key)) e.preventDefault();
+    });
+
+    inp.addEventListener("input", e => {
+      // Strip non-digits
+      const val = e.target.value.replace(/\D/g,"");
+      e.target.value = val ? val[val.length-1] : "";
+      markFilled(inp);
+      // Auto-advance
+      if (e.target.value && i < OTP_LEN-1){
+        inputs[i+1].focus();
+        inputs[i+1].select();
+      }
+      // Auto-submit when all filled
+      if (getVal().length === OTP_LEN && onComplete) onComplete(getVal());
+    });
+
+    inp.addEventListener("keydown", e=>{
+      if (e.key === "Backspace"){
+        if (!inp.value && i > 0){
+          inputs[i-1].value = "";
+          inputs[i-1].classList.remove("filled");
+          inputs[i-1].focus();
+        } else {
+          inp.value = "";
+          markFilled(inp);
+        }
+      }
+      // Arrow key navigation
+      if (e.key === "ArrowLeft" && i > 0) inputs[i-1].focus();
+      if (e.key === "ArrowRight" && i < OTP_LEN-1) inputs[i+1].focus();
+    });
+
+    // Select all text on focus for easy replacement
+    inp.addEventListener("focus", ()=> inp.select());
+
+    inp.addEventListener("paste", e=>{
+      const txt = (e.clipboardData.getData("text")||"").replace(/\D/g,"").slice(0, OTP_LEN);
+      if (!txt) return;
+      e.preventDefault();
+      inputs.forEach((x,j)=>{
+        x.value = txt[j] || "";
+        markFilled(x);
+      });
+      const nextEmpty = inputs.findIndex(x=>!x.value);
+      const focusIdx = nextEmpty === -1 ? OTP_LEN-1 : nextEmpty;
+      inputs[focusIdx].focus();
+      if (txt.length === OTP_LEN && onComplete) onComplete(txt);
+    });
+  });
+
+  return getVal;
+}
+const getSignupOtp = bindOtp($("#otpBoxes"), (code)=>{
+  // auto-submit when all 8 digits filled
+  setTimeout(()=> $("#btnVerify").click(), 120);
+});
+
+function shake(container){
+  container.classList.add("shake");
+  // Clear all boxes on wrong code
+  $$("input", container).forEach(inp=>{ inp.value=""; inp.classList.remove("filled"); });
+  $$("input", container)[0].focus();
+  vibrate([80,40,80]);
+  setTimeout(()=> container.classList.remove("shake"), 500);
+}
+
+/* =================== RESEND TIMER =================== */
+function startResend(btn, timerSpan, sec=60){
+  btn.classList.add("disabled");
+  let t = sec;
+  timerSpan.textContent = t;
+  const id = setInterval(()=>{
+    t--;
+    timerSpan.textContent = t;
+    if (t <= 0){
+      clearInterval(id);
+      btn.classList.remove("disabled");
+      btn.textContent = "Resend code";
+    }
+  }, 1000);
+}
+
+/* =================== WAKE LOCK =================== */
+let wakeLock = null;
+async function acquireWakeLock(){
+  try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch(e){}
+}
+function releaseWakeLock(){ try { wakeLock && wakeLock.release(); wakeLock = null; } catch(e){} }
+
+/* =================== SIGN UP FLOW =================== */
+let pendingEmail = null;
+let pendingMeta  = null;
+
+$("#btnSignup").addEventListener("click", async ()=>{
+  const name  = $("#su_name").value.trim();
+  const email = $("#su_email").value.trim().toLowerCase();
+  const phone = $("#su_phone").value.trim();
+  const p1    = $("#su_pass").value;
+  const p2    = $("#su_pass2").value;
+  const terms = $("#su_terms").checked;
+
+  // Clear all errors first
+  clearFieldErrors("err-su_name","err-su_email","err-su_pass","err-su_pass2","err-su_terms");
+
+  let hasError = false;
+  if (!name) {
+    fieldError("err-su_name", "field-su_name", "Full name is required");
+    hasError = true;
+  }
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    fieldError("err-su_email", "field-su_email", "Enter a valid email address");
+    hasError = true;
+  }
+  if (p1.length < 8) {
+    fieldError("err-su_pass", "field-su_pass", "Password must be at least 8 characters");
+    hasError = true;
+  }
+  if (p1 !== p2) {
+    fieldError("err-su_pass2", "field-su_pass2", "Passwords do not match");
+    hasError = true;
+  }
+  if (!terms) {
+    fieldError("err-su_terms", null, "Please accept the Terms of Service");
+    hasError = true;
+  }
+  if (hasError) { shakeBtn($("#btnSignup")); return; }
+
+  $("#loader1").classList.add("show");
+  try {
+    const { error } = await sb.auth.signUp({
+      email,
+      password: p1,
+      options: {
+        data: { full_name: name, phone_number: phone || null }
+      }
+    });
+    if (error) throw error;
+
+    pendingEmail = email;
+    pendingMeta  = { full_name: name, phone_number: phone || null };
+
+    $("#otpHint").textContent = `An 8-digit code was sent to ${email}. Enter it below to verify your account.`;
+    toast("Check your email for the code!", "good");
+    go("otp");
+    startResend($("#resendBtn"), $("#resendTimer"));
+    acquireWakeLock();
+    $$("#otpBoxes input")[0].focus();
+  } catch(e){
+    shakeBtn($("#btnSignup"));
+    const msg = (e.message || "").toLowerCase();
+    if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("user already exists") || msg.includes("email") && msg.includes("exist")) {
+      // Show duplicate email popup
+      const overlay = $("#emailPopupOverlay");
+      $("#emailPopupAddr").textContent = email;
+      overlay.classList.add("show");
+    } else {
+      toast(e.message || "Sign up failed", "bad");
+    }
+  } finally {
+    $("#loader1").classList.remove("show");
+  }
+});
+
+/* =================== DUPLICATE EMAIL POPUP =================== */
+document.getElementById("emailPopupSignIn").addEventListener("click", () => {
+  document.getElementById("emailPopupOverlay").classList.remove("show");
+  // Pre-fill sign-in email and go to signin tab
+  const emailVal = document.getElementById("su_email").value.trim().toLowerCase();
+  document.getElementById("si_email").value = emailVal;
+  go("signin");
+  // Switch tab indicator
+  const tabs = document.getElementById("tabs");
+  if (tabs) tabs.dataset.active = "signin";
+  document.querySelectorAll("#tabs .tab").forEach(t => t.classList.toggle("active", t.dataset.go === "signin"));
+  checkSignin();
+});
+document.getElementById("emailPopupDismiss").addEventListener("click", () => {
+  document.getElementById("emailPopupOverlay").classList.remove("show");
+  document.getElementById("su_email").focus();
+  document.getElementById("su_email").select();
+});
+// Close on overlay click
+document.getElementById("emailPopupOverlay").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove("show");
+});
+
+/* =================== RESEND OTP =================== */
+$("#resendBtn").addEventListener("click", async ()=>{
+  if ($("#resendBtn").classList.contains("disabled")) return;
+  if (!pendingEmail) return;
+  try {
+    const { error } = await sb.auth.resend({ type: "signup", email: pendingEmail });
+    if (error) throw error;
+    toast("New code sent!", "good");
+  } catch(e){
+    toast(e.message || "Failed to resend", "bad");
+  }
+  $("#resendBtn").innerHTML = 'Resend in <span id="resendTimer">60</span>s';
+  startResend($("#resendBtn"), $("#resendTimer"));
+});
+
+/* =================== VERIFY OTP =================== */
+$("#btnVerify").addEventListener("click", async ()=>{
+  const code = getSignupOtp();
+  if (code.length !== 8) return shake($("#otpBoxes"));
+
+  try {
+    const { data, error } = await sb.auth.verifyOtp({
+      email: pendingEmail,
+      token: code,
+      type: "email"
+    });
+    if (error) throw error;
+
+    // Insert profile row into public.users
+    const uid = data.user.id;
+    const { error: dbErr } = await sb.from("users").insert([{
+      id: uid,
+      full_name: pendingMeta.full_name,
+      phone_number: pendingMeta.phone_number || null,
+      is_online: true,
+      last_seen: new Date().toISOString(),
+      privacy_settings: {
+        messages: "everyone",
+        show_phone: false,
+        show_last_seen: "everyone"
+      },
+      social_links: {}
+    }]);
+    if (dbErr) console.warn("Profile insert error:", dbErr.message);
+
+    releaseWakeLock();
+    toast("Welcome to NovaChat! 🎉", "good");
+    showHome(data.user);
+  } catch(e){
+    shake($("#otpBoxes"));
+    toast(e.message || "Wrong code, try again", "bad");
+  }
+});
+
+/* =================== SIGN IN =================== */
+$("#btnSignin").addEventListener("click", async ()=>{
+  const email = $("#si_email").value.trim().toLowerCase();
+  const pass  = $("#si_pass").value;
+
+  clearFieldErrors("err-signin");
+
+  const btn = $("#btnSignin");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="save-dots" style="display:flex;gap:4px;align-items:center;"><span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1s infinite ease-in-out;"></span><span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1s .18s infinite ease-in-out;"></span><span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1s .36s infinite ease-in-out;"></span></span>';
+
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    toast(`Welcome back!`, "good");
+    showHome(data.user);
+  } catch(e){
+    fieldError("err-signin", null, e.message || "Invalid email or password");
+    shakeBtn(btn);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ph ph-sign-in"></i> Sign In';
+    checkSignin();
+  }
+});
+
+/* =================== PASSWORD RESET =================== */
+$("#btnSendReset").addEventListener("click", async ()=>{
+  const email = $("#rs_email").value.trim().toLowerCase();
+  clearFieldErrors("err-reset");
+  if (!email) {
+    fieldError("err-reset", null, "Enter your email address");
+    shakeBtn($("#btnSendReset"));
+    return;
+  }
+
+  $("#btnSendReset").disabled = true;
+  $("#btnSendReset").innerHTML = '<span class="save-dots" style="display:flex;gap:4px;align-items:center;"><span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1s infinite ease-in-out;"></span><span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1s .18s infinite ease-in-out;"></span><span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1s .36s infinite ease-in-out;"></span></span>';
+
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.href.split("#")[0]
+    });
+    if (error) throw error;
+    $("#btnSendReset").style.display = "none";
+    $("#resetSentMsg").style.display = "block";
+  } catch(e){
+    fieldError("err-reset", null, e.message || "Failed to send reset email");
+    shakeBtn($("#btnSendReset"));
+    $("#btnSendReset").disabled = false;
+    $("#btnSendReset").innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Send Reset Link';
+  }
+});
+
+/* =================== AUTH STATE CHANGE =================== */
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    // User clicked the reset link — send them to set a new password
+    currentUser = session.user;
+    $("#tabs").style.display = "none";
+    go("newpass");
+    $("#np_pass").focus();
+  }
+});
+
+/* =================== NEW PASSWORD HANDLER =================== */
+$("#np_pass").addEventListener("input", e => applyStrength(e.target.value, $("#npStrBar"), $("#npStrLabel")));
+
+function checkNpMatch(){
+  const a = $("#np_pass").value, b = $("#np_pass2").value;
+  const sh = $("#npMatchShield");
+  if (b && a === b){
+    sh.classList.add("match");
+    sh.innerHTML = '<i class="ph ph-shield-check" style="color:var(--good)"></i>';
+  } else {
+    sh.classList.remove("match");
+    sh.innerHTML = '<i class="ph ph-shield"></i>';
+  }
+}
+$("#np_pass").addEventListener("input", checkNpMatch);
+$("#np_pass2").addEventListener("input", checkNpMatch);
+
+$("#btnSetNewPass").addEventListener("click", async () => {
+  const p1 = $("#np_pass").value;
+  const p2 = $("#np_pass2").value;
+
+  if (p1.length < 8) return toast("Password must be at least 8 characters", "bad");
+  if (p1 !== p2)     return toast("Passwords do not match", "bad");
+
+  $("#btnSetNewPass").disabled = true;
+  $("#btnSetNewPass").innerHTML = '<span class="save-dots" style="display:flex;gap:4px;align-items:center;"><span></span><span></span><span></span></span>';
+
+  try {
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    if (error) throw error;
+
+    toast("Password updated! Please sign in.", "good");
+    await sb.auth.signOut();
+    currentUser = null;
+    $("#np_pass").value = "";
+    $("#np_pass2").value = "";
+    $("#tabs").style.display = "";
+    go("signin");
+  } catch(e) {
+    toast(e.message || "Failed to update password", "bad");
+  } finally {
+    $("#btnSetNewPass").disabled = false;
+    $("#btnSetNewPass").innerHTML = '<i class="ph ph-check-circle"></i> Update Password';
+  }
+});
+
+
+let currentUser = null;
+
+function showHome(user){
+  currentUser = user;
+  const meta = user.user_metadata || {};
+  const name = meta.full_name || user.email.split("@")[0];
+  $("#homeName").textContent = `Hey, ${name.split(" ")[0]}! 👋`;
+  $("#homeEmail").textContent = user.email;
+  $("#tabs").style.display = "none";
+  // Hide top island when logged in
+  const topIsland = document.getElementById("topIsland");
+  if (topIsland) topIsland.classList.remove("visible");
+  const authSpacer = document.getElementById("authSpacer");
+  if (authSpacer) authSpacer.style.display = "none";
+  go("home");
+  // Show bottom island
+  const island = document.getElementById("tab-island");
+  if (island) island.style.display = "flex";
+  initProfilePage();
+  // Activate tab island - open profile overlay
+  setTimeout(() => {
+    if (window.openProfileIsland) window.openProfileIsland();
+  }, 120);
+}
+
+$("#btnSignout").addEventListener("click", async ()=>{
+  // Set offline before signing out
+  if (currentUser) {
+    clearInterval(heartbeatInterval);
+    try {
+      await sb.from("users").update({ is_online: false, last_seen: new Date().toISOString() }).eq("id", currentUser.id);
+    } catch(e) {}
+  }
+  await sb.auth.signOut();
+  currentUser = null;
+  $("#tabs").style.display = "";
+  // Show top island again on sign out
+  const topIsland = document.getElementById("topIsland");
+  if (topIsland) topIsland.classList.add("visible");
+  const authSpacer = document.getElementById("authSpacer");
+  if (authSpacer) authSpacer.style.display = "";
+  // Reset reset page state
+  $("#btnSendReset").style.display = "";
+  $("#resetSentMsg").style.display = "none";
+  $("#rs_email").value = "";
+  toast("Signed out", "");
+  go("signin");
+  // Hide tab island and close profile overlay
+  const profilePage = document.getElementById("page-profile");
+  if (profilePage) profilePage.classList.remove("active");
+  document.body.style.overflow = "";
+  const island = document.getElementById("tab-island");
+  if (island) island.style.display = "none";
+  // Hide placeholder pages
+  ['chats','discover','notifications'].forEach(t => {
+    const el = document.getElementById('placeholder-' + t);
+    if (el) el.classList.remove('active');
+  });
+});
+
+/* =================== SESSION CHECK ON LOAD (splash-aware) =================== */
+(async ()=>{
+  const splash    = document.getElementById("splash");
+  const splashSub = document.getElementById("splashSub");
+  const hideSplash = () => {
+    if (!splash) return;
+    splash.classList.add("hide");
+    setTimeout(() => splash.remove(), 600);
+  };
+
+  let session = null;
+  try {
+    const { data } = await sb.auth.getSession();
+    session = data.session;
+  } catch (e) { /* offline / network — fall through to auth */ }
+
+  if (session) {
+    if (splashSub) splashSub.textContent = "Welcome back";
+    setTimeout(() => {
+      showHome(session.user);
+      hideSplash();
+    }, 450);
+  } else {
+    hideSplash();
+  }
+})();
+
+/* =================== SOCIAL PLACEHOLDERS =================== */
+["googleBtn","appleBtn","googleBtnSi","appleBtnSi"].forEach(id=>{
+  const el = $("#"+id);
+  if (el) el.addEventListener("click", ()=> toast("Social sign-in coming soon", ""));
+});
+
+/* =================== OFFLINE / CONNECTION =================== */
+function updateConn(){
+  const off = !navigator.onLine;
+  $("#offlineBanner").classList.toggle("show", off);
+}
+window.addEventListener("online", updateConn);
+window.addEventListener("offline", updateConn);
+updateConn();
+
+/* =================== HIDE KEYBOARD ON SCROLL =================== */
+let lastY = 0;
+window.addEventListener("scroll", ()=>{
+  const y = window.scrollY;
+  if (Math.abs(y - lastY) > 60 && document.activeElement && document.activeElement.tagName === "INPUT"){
+    document.activeElement.blur();
+  }
+  lastY = y;
+}, { passive: true });
+
+/* =================== SWIPE BACK ON RESET =================== */
+let touchX = 0;
+$("#page-reset").addEventListener("touchstart", e=> touchX = e.touches[0].clientX, { passive:true });
+$("#page-reset").addEventListener("touchend", e=>{
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (dx > 80) go("signin");
+});
+
+/* =================== PROFILE PAGE =================== */
+
+let currentProfile = null;  // fetched data from Supabase
+let heartbeatInterval = null;
+let profEditMode = false;
+let profUsernameValid = true;  // true if unchanged or checked ok
+let profActiveSocPlatform = null;
+let profOriginalUsername = null;
+
+/* ---- Social platform config ---- */
+const SOCIAL_PLATFORMS = {
+  instagram: { placeholder: "https://instagram.com/yourhandle", domain: "instagram.com" },
+  x:         { placeholder: "https://x.com/yourhandle",        domain: ["x.com","twitter.com"] },
+  linkedin:  { placeholder: "https://linkedin.com/in/yourname", domain: "linkedin.com" },
+  tiktok:    { placeholder: "https://tiktok.com/@yourhandle",   domain: "tiktok.com" },
+  github:    { placeholder: "https://github.com/yourhandle",    domain: "github.com" }
+};
+
+/* ---- Completion calculator ---- */
+function calcCompletion(profile) {
+  const fields = [
+    profile.avatar_url,
+    profile.username,
+    profile.bio,
+    profile.location,
+    profile.phone_number,
+    profile.social_links && Object.values(profile.social_links).some(v => v)
+  ];
+  const filled = fields.filter(Boolean).length;
+  return Math.round((filled / 6) * 100);
+}
+
+function getMissingField(profile) {
+  if (!profile.avatar_url)   return "a profile photo";
+  if (!profile.username)     return "a username";
+  if (!profile.bio)          return "a bio";
+  if (!profile.location)     return "a location";
+  if (!profile.phone_number) return "a phone number";
+  if (!profile.social_links || !Object.values(profile.social_links).some(v => v))
+    return "a social link";
+  return null;
+}
+
+/* ---- Animate completion bar ---- */
+function animateCompletion(pct) {
+  const fill  = $("#profCompFill");
+  const label = $("#profCompLabel");
+  // Trigger reflow then animate
+  fill.style.transition = "none";
+  fill.style.width = "0%";
+  fill.offsetHeight; // force reflow
+  fill.style.transition = "width 600ms cubic-bezier(.4,0,.2,1)";
+  setTimeout(() => { fill.style.width = pct + "%"; }, 300);
+
+  const missing = getMissingField(currentProfile);
+  if (pct >= 100) {
+    label.textContent = "Profile 100% complete 🎉";
+  } else {
+    label.textContent = `Profile ${pct}% complete${missing ? ` — add ${missing} to improve` : ""}`;
+  }
+}
+
+/* ---- Populate profile UI from data ---- */
+function populateProfile(profile) {
+  currentProfile = profile;
+  profOriginalUsername = profile.username || "";
+
+  // Hero
+  $("#profHeroName").textContent = profile.full_name || "No name";
+  if (profile.username) {
+    $("#profHeroHandle").textContent = "@" + profile.username;
+    $("#profHeroHandle").classList.remove("no-handle");
+  } else {
+    $("#profHeroHandle").textContent = "Add a username";
+    $("#profHeroHandle").classList.add("no-handle");
+  }
+
+  // Avatar
+  if (profile.avatar_url) {
+    const img = document.createElement("img");
+    img.src = profile.avatar_url;
+    img.alt = "Profile photo";
+    $("#profAvatarInitials").style.display = "none";
+    $("#profAvatar").insertBefore(img, $("#profAvatarInitials"));
+  } else {
+    const name = profile.full_name || "?";
+    const parts = name.trim().split(/\s+/);
+    const initials = parts.length >= 2
+      ? parts[0][0] + parts[parts.length-1][0]
+      : parts[0][0];
+    $("#profAvatarInitials").textContent = initials.toUpperCase();
+  }
+
+  // Online dot
+  if (profile.is_online) {
+    $("#profOnlineDot").classList.remove("hidden");
+  } else {
+    $("#profOnlineDot").classList.add("hidden");
+  }
+
+  // Basic info rows
+  setRowValue("profNameVal", profile.full_name, "—", false);
+  setRowValue("profUserVal", profile.username ? "@" + profile.username : null, "Not set", true);
+  setRowValue("profLocVal",  profile.location, "Not set", true);
+  setRowValue("profPhoneVal",profile.phone_number, "Not added", true);
+
+  // Bio
+  const bio = profile.bio || "";
+  $("#profBioArea").value = bio;
+  updateBioCounter(bio);
+
+  // Social links
+  const links = profile.social_links || {};
+  Object.keys(SOCIAL_PLATFORMS).forEach(platform => {
+    const btn = $(`.prof-soc-btn[data-platform="${platform}"]`);
+    if (btn) btn.classList.toggle("linked", !!(links[platform]));
+  });
+
+  // Privacy
+  const priv = profile.privacy_settings || { messages:"everyone", show_phone:false, show_last_seen:"everyone" };
+  updatePrivChip("privMsgChip", "privMsgSub", priv.messages === "everyone" ? "Everyone" : "Friends only");
+  updatePrivChip("privSeenChip", "privSeenSub", capitalize(priv.show_last_seen || "everyone"));
+  const phoneToggle = $("#privPhoneToggle");
+  phoneToggle.classList.toggle("on", !!priv.show_phone);
+  $("#privPhoneSub").textContent = priv.show_phone ? "Visible to others" : "Hidden from others";
+
+  // Online toggle
+  const onlineToggle = $("#onlineToggle");
+  onlineToggle.classList.toggle("on", !!profile.is_online);
+  $("#onlineStatusSub").textContent = profile.is_online ? "You appear online" : "You appear offline";
+
+  // Input fields
+  $("#profNameInput").value  = profile.full_name    || "";
+  $("#profUserInput").value  = profile.username     || "";
+  $("#profLocInput").value   = profile.location     || "";
+  $("#profPhoneInput").value = profile.phone_number || "";
+
+  // Completion
+  animateCompletion(calcCompletion(profile));
+  syncPrivacyChipIndices(profile);
+}
+
+function setRowValue(elId, value, fallback, muteWhenEmpty) {
+  const el = $("#" + elId);
+  if (value) {
+    el.textContent = value;
+    el.classList.remove("muted");
+  } else {
+    el.textContent = fallback;
+    if (muteWhenEmpty) el.classList.add("muted");
+  }
+}
+
+function capitalize(str) {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function updatePrivChip(chipId, subId, value) {
+  $("#" + chipId).textContent = value;
+  const sub = $("#" + subId);
+  sub.style.opacity = "0";
+  setTimeout(() => {
+    sub.textContent = value;
+    sub.style.opacity = "1";
+  }, 150);
+}
+
+/* ---- Bio counter ---- */
+function updateBioCounter(text) {
+  const len = [...text].length;
+  const counter = $("#profBioCounter");
+  counter.textContent = `${len} / 160`;
+  counter.className = "prof-bio-counter";
+  if (len >= 155) {
+    counter.classList.add("bad");
+    counter.style.animation = "none";
+    counter.offsetHeight;
+    counter.style.animation = "wiggle 400ms cubic-bezier(.4,0,.2,1)";
+  } else if (len >= 140) {
+    counter.classList.add("warn");
+  }
+}
+
+/* ---- Toggle edit mode ---- */
+function setEditMode(on) {
+  profEditMode = on;
+  $("#profEditBtn").style.display    = on ? "none" : "";
+  $("#profSaveBtn").style.display    = on ? "" : "none";
+  $("#profCamBtn").classList.toggle("visible", on);
+
+  // Bio
+  $("#profBioArea").disabled = !on;
+  $("#profBioCounter").style.display = on ? "block" : "none";
+
+  // Row clicks only work in edit mode
+  // Collapse all expanded rows if leaving edit mode
+  if (!on) {
+    $$(".prof-row-expand.open").forEach(el => el.classList.remove("open"));
+    $$(".prof-row.dimmed").forEach(el => el.classList.remove("dimmed"));
+    // Collapse social panel
+    if (profActiveSocPlatform) {
+      $("#profSocPanel").classList.remove("open");
+      profActiveSocPlatform = null;
+    }
+  }
+}
+
+/* ---- Init profile page ---- */
+async function initProfilePage() {
+  if (!currentUser) return;
+  const uid = currentUser.id;
+
+  // Show loader
+  $("#profLoader").classList.add("show");
+
+  // Reset to view mode
+  setEditMode(false);
+
+  try {
+    const { data, error } = await sb.from("users")
+      .select("*").eq("id", uid).single();
+    if (error) throw error;
+    populateProfile(data);
+
+    // Show verified badge if email is confirmed
+    const emailConfirmed = currentUser.email_confirmed_at || currentUser.confirmed_at;
+    $("#profVerifiedBadge").classList.toggle("show", !!emailConfirmed);
+
+    // Set online and start heartbeat
+    await sb.from("users")
+      .update({ is_online: true, last_seen: new Date().toISOString() })
+      .eq("id", uid);
+    startHeartbeat();
+
+  } catch(e) {
+    if (!navigator.onLine) {
+      toast("You're offline", "bad");
+    } else {
+      toast(e.message || "Failed to load profile", "bad");
+    }
+  } finally {
+    $("#profLoader").classList.remove("show");
+  }
+}
+
+/* ---- Heartbeat ---- */
+function startHeartbeat() {
+  clearInterval(heartbeatInterval);
+  if (!currentUser) return;
+  heartbeatInterval = setInterval(async () => {
+    if (!currentUser) return;
+    try {
+      await sb.from("users")
+        .update({ is_online: true, last_seen: new Date().toISOString() })
+        .eq("id", currentUser.id);
+    } catch(e) {}
+  }, 30000);
+}
+
+document.addEventListener("visibilitychange", async () => {
+  if (!currentUser) return;
+  if (document.hidden) {
+    clearInterval(heartbeatInterval);
+    try {
+      await sb.from("users")
+        .update({ is_online: false, last_seen: new Date().toISOString() })
+        .eq("id", currentUser.id);
+    } catch(e) {}
+  } else {
+    try {
+      await sb.from("users")
+        .update({ is_online: true, last_seen: new Date().toISOString() })
+        .eq("id", currentUser.id);
+    } catch(e) {}
+    startHeartbeat();
+  }
+});
+
+/* ---- Profile top bar buttons ---- */
+$("#profBackBtn").addEventListener("click", () => {
+  if (profEditMode) {
+    setEditMode(false);
+  } else {
+    go("home");
+  }
+});
+
+$("#profEditBtn").addEventListener("click", () => {
+  setEditMode(true);
+});
+
+/* ---- Row expand in edit mode ---- */
+const rowExpandMap = {
+  profNameRow:  "profNameExpand",
+  profUserRow:  "profUserExpand",
+  profLocRow:   "profLocExpand",
+  profPhoneRow: "profPhoneExpand"
+};
+const rowInputMap = {
+  profNameRow:  "profNameInput",
+  profUserRow:  "profUserInput",
+  profLocRow:   "profLocInput",
+  profPhoneRow: "profPhoneInput"
+};
+
+Object.keys(rowExpandMap).forEach(rowId => {
+  $("#" + rowId).addEventListener("click", () => {
+    if (!profEditMode) return;
+    const expandId = rowExpandMap[rowId];
+    const isOpen = $("#" + expandId).classList.contains("open");
+
+    // Close all
+    Object.values(rowExpandMap).forEach(eid => {
+      $("#" + eid).classList.remove("open");
+    });
+    // Undim all rows
+    Object.keys(rowExpandMap).forEach(rid => {
+      $("#" + rid).classList.remove("dimmed");
+    });
+
+    if (!isOpen) {
+      $("#" + expandId).classList.add("open");
+      // Dim other rows
+      Object.keys(rowExpandMap).forEach(rid => {
+        if (rid !== rowId) $("#" + rid).classList.add("dimmed");
+      });
+      // Focus input
+      setTimeout(() => {
+        const inp = $("#" + rowInputMap[rowId]);
+        if (inp) inp.focus();
+      }, 150);
+    }
+  });
+});
+
+/* ---- Username availability check ---- */
+let usernameDebounceTimer = null;
+
+$("#profUserInput").addEventListener("input", e => {
+  // Auto lowercase
+  e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+  const val = e.target.value;
+  clearTimeout(usernameDebounceTimer);
+
+  const statusEl = $("#profUserStatus");
+  statusEl.style.display = "none";
+  profUsernameValid = true;
+
+  // If same as current, no check needed
+  if (val === profOriginalUsername) {
+    profUsernameValid = true;
+    return;
+  }
+
+  // Validate format
+  if (val.length < 3 || val.length > 20) {
+    statusEl.style.display = "flex";
+    statusEl.innerHTML = '<i class="ph ph-x-circle" style="color:var(--bad);"></i>';
+    profUsernameValid = false;
+    $("#profUserInput").style.borderColor = "var(--bad)";
+    return;
+  }
+
+  // Show checking spinner
+  statusEl.style.display = "flex";
+  statusEl.innerHTML = '<i class="ph ph-circle-notch" style="color:var(--muted);animation:pulse .8s infinite;"></i>';
+  profUsernameValid = false;
+
+  usernameDebounceTimer = setTimeout(async () => {
+    try {
+      const { data, error } = await sb.from("users")
+        .select("id").eq("username", val).neq("id", currentUser.id);
+      if (error) throw error;
+      if (data && data.length > 0) {
+        // Taken
+        statusEl.innerHTML = '<i class="ph ph-x-circle" style="color:var(--bad);"></i>';
+        $("#profUserInput").style.borderColor = "var(--bad)";
+        shake($("#profUserInput").closest(".field") || $("#profUserInput"));
+        profUsernameValid = false;
+      } else {
+        // Available
+        statusEl.innerHTML = '<i class="ph ph-check-circle" style="color:var(--good);animation:bounce .5s;"></i>';
+        $("#profUserInput").style.borderColor = "var(--good)";
+        profUsernameValid = true;
+      }
+    } catch(err) {
+      statusEl.style.display = "none";
+      profUsernameValid = false;
+    }
+  }, 400);
+});
+
+/* ---- Bio counter live ---- */
+$("#profBioArea").addEventListener("input", e => {
+  const chars = [...e.target.value];
+  if (chars.length > 160) {
+    e.target.value = chars.slice(0, 160).join("");
+  }
+  updateBioCounter(e.target.value);
+  // auto-grow
+  e.target.style.height = "auto";
+  e.target.style.height = e.target.scrollHeight + "px";
+});
+
+/* ---- Social link buttons ---- */
+$$("#profSocialIcons .prof-soc-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const platform = btn.dataset.platform;
+    const panelEl  = $("#profSocPanel");
+
+    if (!profEditMode) {
+      // VIEW mode: open link in new tab if linked
+      const links = currentProfile && currentProfile.social_links || {};
+      if (links[platform]) window.open(links[platform], "_blank");
+      return;
+    }
+
+    // EDIT mode
+    if (profActiveSocPlatform === platform && panelEl.classList.contains("open")) {
+      panelEl.classList.remove("open");
+      profActiveSocPlatform = null;
+      return;
+    }
+
+    profActiveSocPlatform = platform;
+    const config  = SOCIAL_PLATFORMS[platform];
+    const links   = currentProfile && currentProfile.social_links || {};
+    const current = links[platform] || "";
+
+    $("#profSocInput").placeholder = config.placeholder;
+    $("#profSocInput").value = current;
+    $("#profSocRemove").classList.toggle("visible", !!current);
+
+    panelEl.classList.add("open");
+    setTimeout(() => $("#profSocInput").focus(), 150);
+  });
+});
+
+/* ---- Social save ---- */
+$("#profSocSave").addEventListener("click", async () => {
+  if (!profActiveSocPlatform || !currentUser) return;
+  const url = $("#profSocInput").value.trim();
+  if (!url) { toast("Enter a URL", "bad"); return; }
+
+  const cfg = SOCIAL_PLATFORMS[profActiveSocPlatform];
+  const domains = Array.isArray(cfg.domain) ? cfg.domain : [cfg.domain];
+  const valid = domains.some(d => url.includes(d));
+  if (!valid) {
+    toast(`Must be a ${profActiveSocPlatform} URL`, "bad");
+    return;
+  }
+
+  try {
+    const links = Object.assign({}, (currentProfile && currentProfile.social_links) || {});
+    links[profActiveSocPlatform] = url;
+
+    await sb.from("users").update({ social_links: links }).eq("id", currentUser.id);
+    currentProfile.social_links = links;
+
+    // Card flip animation
+    const btn = $(`.prof-soc-btn[data-platform="${profActiveSocPlatform}"]`);
+    btn.style.animation = "cardFlipOut 200ms ease forwards";
+    setTimeout(() => {
+      btn.classList.add("linked");
+      btn.style.animation = "cardFlipIn 200ms ease forwards";
+      setTimeout(() => { btn.style.animation = ""; }, 200);
+    }, 200);
+
+    // Collapse panel
+    $("#profSocPanel").classList.remove("open");
+    profActiveSocPlatform = null;
+
+    // Recalculate completion
+    animateCompletion(calcCompletion(currentProfile));
+    toast("Link saved!", "good");
+  } catch(e) {
+    toast(!navigator.onLine ? "You're offline" : (e.message || "Save failed"), "bad");
+  }
+});
+
+/* ---- Social remove ---- */
+$("#profSocRemove").addEventListener("click", async () => {
+  if (!profActiveSocPlatform || !currentUser) return;
+  try {
+    const links = Object.assign({}, (currentProfile && currentProfile.social_links) || {});
+    delete links[profActiveSocPlatform];
+
+    await sb.from("users").update({ social_links: links }).eq("id", currentUser.id);
+    currentProfile.social_links = links;
+
+    const btn = $(`.prof-soc-btn[data-platform="${profActiveSocPlatform}"]`);
+    btn.classList.remove("linked");
+
+    $("#profSocPanel").classList.remove("open");
+    profActiveSocPlatform = null;
+
+    animateCompletion(calcCompletion(currentProfile));
+    toast("Link removed", "");
+  } catch(e) {
+    toast(!navigator.onLine ? "You're offline" : (e.message || "Remove failed"), "bad");
+  }
+});
+
+/* ---- Privacy: message chip ---- */
+const msgOptions = ["Everyone", "Friends only"];
+let msgIdx = 0;
+$("#privMsgChip").addEventListener("click", async () => {
+  if (!currentUser || !currentProfile) return;
+  msgIdx = (msgIdx + 1) % msgOptions.length;
+  const val = msgOptions[msgIdx];
+  updatePrivChip("privMsgChip", "privMsgSub", val);
+  try {
+    const priv = Object.assign({}, currentProfile.privacy_settings || {});
+    priv.messages = val === "Everyone" ? "everyone" : "friends";
+    await sb.from("users").update({ privacy_settings: priv }).eq("id", currentUser.id);
+    currentProfile.privacy_settings = priv;
+    toast("Privacy updated", "good");
+  } catch(e) {
+    toast(!navigator.onLine ? "You're offline" : (e.message || "Update failed"), "bad");
+  }
+});
+
+/* ---- Privacy: last seen chip ---- */
+const seenOptions = ["Everyone", "Friends", "Nobody"];
+let seenIdx = 0;
+$("#privSeenChip").addEventListener("click", async () => {
+  if (!currentUser || !currentProfile) return;
+  seenIdx = (seenIdx + 1) % seenOptions.length;
+  const val = seenOptions[seenIdx];
+  updatePrivChip("privSeenChip", "privSeenSub", val);
+  try {
+    const priv = Object.assign({}, currentProfile.privacy_settings || {});
+    priv.show_last_seen = val.toLowerCase();
+    await sb.from("users").update({ privacy_settings: priv }).eq("id", currentUser.id);
+    currentProfile.privacy_settings = priv;
+    toast("Privacy updated", "good");
+  } catch(e) {
+    toast(!navigator.onLine ? "You're offline" : (e.message || "Update failed"), "bad");
+  }
+});
+
+/* ---- Privacy: phone toggle ---- */
+$("#privPhoneToggle").addEventListener("click", async () => {
+  if (!currentUser || !currentProfile) return;
+  const toggle = $("#privPhoneToggle");
+  const isOn = toggle.classList.toggle("on");
+  $("#privPhoneSub").textContent = isOn ? "Visible to others" : "Hidden from others";
+  try {
+    const priv = Object.assign({}, currentProfile.privacy_settings || {});
+    priv.show_phone = isOn;
+    await sb.from("users").update({ privacy_settings: priv }).eq("id", currentUser.id);
+    currentProfile.privacy_settings = priv;
+    toast("Privacy updated", "good");
+  } catch(e) {
+    toggle.classList.toggle("on"); // revert
+    toast(!navigator.onLine ? "You're offline" : (e.message || "Update failed"), "bad");
+  }
+});
+
+/* ---- Online status toggle ---- */
+$("#onlineToggle").addEventListener("click", async () => {
+  if (!currentUser) return;
+  const toggle = $("#onlineToggle");
+  const isOn = toggle.classList.toggle("on");
+  const dot   = $("#profOnlineDot");
+
+  $("#onlineStatusSub").textContent = isOn ? "You appear online" : "You appear offline";
+
+  if (isOn) {
+    dot.classList.remove("hidden");
+    dot.style.animation = "none";
+    dot.offsetHeight;
+    dot.style.animation = "pulse 400ms ease";
+  } else {
+    dot.classList.add("hidden");
+  }
+
+  try {
+    await sb.from("users")
+      .update({ is_online: isOn, last_seen: new Date().toISOString() })
+      .eq("id", currentUser.id);
+    if (currentProfile) currentProfile.is_online = isOn;
+    if (isOn) startHeartbeat();
+    else clearInterval(heartbeatInterval);
+  } catch(e) {
+    toggle.classList.toggle("on"); // revert
+    toast(!navigator.onLine ? "You're offline" : (e.message || "Update failed"), "bad");
+  }
+});
+
+/* ---- Photo upload ---- */
+$("#profCamBtn").addEventListener("click", () => {
+  if (!profEditMode) return;
+  $("#profFileInput").click();
+});
+
+$("#profFileInput").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  if (!file || !currentUser) return;
+  e.target.value = "";
+
+  const allowed = ["image/jpeg","image/png","image/webp"];
+  if (!allowed.includes(file.type)) {
+    toast("Please choose a JPEG, PNG or WebP image", "bad");
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    toast("Image must be under 2MB", "bad");
+    return;
+  }
+
+  // Preview immediately
+  const previewUrl = URL.createObjectURL(file);
+  const avatarEl = $("#profAvatar");
+  let img = avatarEl.querySelector("img");
+  if (!img) {
+    img = document.createElement("img");
+    img.alt = "Profile photo";
+    avatarEl.insertBefore(img, $("#profAvatarInitials"));
+    $("#profAvatarInitials").style.display = "none";
+  }
+  img.src = previewUrl;
+  img.style.transform = "scale(.85)";
+  img.style.opacity = "0";
+  img.style.transition = "transform 300ms ease, opacity 300ms ease";
+  setTimeout(() => { img.style.transform = "scale(1)"; img.style.opacity = "1"; }, 30);
+
+  // Show upload ring
+  const ring    = $("#profUploadRing");
+  const circle  = $("#profRingCircle");
+  ring.classList.add("visible");
+  circle.style.strokeDashoffset = "283";
+
+  // Animate ring fill (fake progress for UX)
+  let offset = 283;
+  const ringAnim = setInterval(() => {
+    offset = Math.max(0, offset - 14);
+    circle.style.strokeDashoffset = offset;
+    if (offset <= 0) clearInterval(ringAnim);
+  }, 80);
+
+  try {
+    // Compress via canvas
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    canvas.width = 300; canvas.height = 300;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, 300, 300);
+    const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.82));
+
+    const uid = currentUser.id;
+    const { error: uploadErr } = await sb.storage
+      .from("avatars")
+      .upload(`${uid}.jpg`, blob, { contentType: "image/jpeg", upsert: true });
+    if (uploadErr) throw uploadErr;
+
+    const { data: pubData } = sb.storage.from("avatars").getPublicUrl(`${uid}.jpg`);
+    const avatarUrl = pubData.publicUrl + "?t=" + Date.now(); // cache bust
+
+    await sb.from("users").update({ avatar_url: avatarUrl }).eq("id", uid);
+    if (currentProfile) currentProfile.avatar_url = avatarUrl;
+
+    clearInterval(ringAnim);
+    circle.style.strokeDashoffset = "0";
+    circle.style.stroke = "var(--good)";
+    setTimeout(() => {
+      ring.classList.remove("visible");
+      circle.style.strokeDashoffset = "283";
+      circle.style.stroke = "#fff";
+    }, 600);
+
+    // Update img src
+    img.src = avatarUrl;
+
+    animateCompletion(calcCompletion(currentProfile));
+    toast("Photo updated!", "good");
+  } catch(err) {
+    clearInterval(ringAnim);
+    ring.classList.remove("visible");
+    circle.style.strokeDashoffset = "283";
+    // Revert preview
+    if (currentProfile && currentProfile.avatar_url) {
+      img.src = currentProfile.avatar_url;
+    } else {
+      img.remove();
+      $("#profAvatarInitials").style.display = "";
+    }
+    URL.revokeObjectURL(previewUrl);
+    let msg = err && err.message ? err.message : "Upload failed";
+    const lower = msg.toLowerCase();
+    if (!navigator.onLine) msg = "You're offline";
+    else if (lower.includes("bucket") && lower.includes("not found"))
+      msg = "Storage bucket 'avatars' is missing";
+    else if (lower.includes("row-level") || lower.includes("rls") || lower.includes("policy") || lower.includes("permission"))
+      msg = "Upload blocked by storage permissions";
+    else if (lower.includes("payload") || lower.includes("too large"))
+      msg = "Image is too large";
+    else if (lower.includes("mime") || lower.includes("content-type"))
+      msg = "Unsupported image type";
+    toast(msg, "bad");
+  }
+});
+
+/* ---- Confetti burst ---- */
+function fireConfetti() {
+  const bar = $("#profCompFill");
+  const rect = bar.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const colors = ["#1d4ed8","#3b82f6","#22c55e","#f59e0b","#ef4444","#a855f7","#fff"];
+
+  for (let i = 0; i < 20; i++) {
+    const dot = document.createElement("div");
+    dot.style.cssText = `
+      position:fixed; width:6px; height:6px; border-radius:50%;
+      background:${colors[i % colors.length]};
+      left:${cx}px; top:${cy}px; z-index:9999;
+      pointer-events:none;
+    `;
+    document.body.appendChild(dot);
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = 40 + Math.random() * 40;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    dot.animate([
+      { transform: "translate(-50%,-50%) scale(1)", opacity: 1 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0)`, opacity: 0 }
+    ], { duration: 600 + Math.random() * 200, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" })
+      .onfinish = () => dot.remove();
+  }
+}
+
+/* ---- Save button handler ---- */
+let prevCompletion = 0;
+
+$("#profSaveBtn").addEventListener("click", async () => {
+  if (!currentUser || !currentProfile) return;
+
+  // Validate
+  const newName     = $("#profNameInput").value.trim();
+  const newUsername = $("#profUserInput").value.trim();
+  const newLocation = $("#profLocInput").value.trim();
+  const newPhone    = $("#profPhoneInput").value.trim();
+  const newBio      = $("#profBioArea").value.trim();
+
+  if (!newName) {
+    toast("Full name is required", "bad");
+    return;
+  }
+  if (newUsername && newUsername !== profOriginalUsername && !profUsernameValid) {
+    toast("Please choose a valid username", "bad");
+    return;
+  }
+  if ([...newBio].length > 160) {
+    toast("Bio must be 160 characters or less", "bad");
+    return;
+  }
+
+  // Social link basic URL validation (already saved individually, but check format)
+  const links = (currentProfile.social_links) || {};
+  for (const [platform, url] of Object.entries(links)) {
+    if (url) {
+      const cfg = SOCIAL_PLATFORMS[platform];
+      if (cfg) {
+        const domains = Array.isArray(cfg.domain) ? cfg.domain : [cfg.domain];
+        if (!domains.some(d => url.includes(d))) {
+          toast(`Invalid ${platform} URL`, "bad");
+          return;
+        }
+      }
+    }
+  }
+
+  // Loading state
+  const btnTextEl = $("#profSaveBtnText");
+  const dotsEl    = $("#profSaveDots");
+  btnTextEl.style.display = "none";
+  dotsEl.style.display    = "flex";
+  $("#profSaveBtn").disabled = true;
+
+  // Build updates (only changed fields)
+  const updates = {};
+  if (newName !== currentProfile.full_name) updates.full_name = newName;
+  if (newUsername && newUsername !== profOriginalUsername) updates.username = newUsername;
+  if (newLocation !== (currentProfile.location || "")) updates.location = newLocation || null;
+  if (newPhone !== (currentProfile.phone_number || "")) updates.phone_number = newPhone || null;
+  if (newBio !== (currentProfile.bio || "")) updates.bio = newBio || null;
+
+  try {
+    if (Object.keys(updates).length > 0) {
+      const { error } = await sb.from("users").update(updates).eq("id", currentUser.id);
+      if (error) throw error;
+    }
+
+    const wasFirstUsername = !profOriginalUsername && newUsername;
+
+    // Update local profile
+    Object.assign(currentProfile, updates);
+    prevCompletion = calcCompletion(currentProfile);
+
+    // Restore button
+    btnTextEl.style.display = "";
+    dotsEl.style.display    = "none";
+    $("#profSaveBtn").style.background = "var(--good)";
+    $("#profSaveBtn").innerHTML = '<i class="ph ph-check" style="font-size:18px;"></i>';
+    setTimeout(() => {
+      $("#profSaveBtn").style.background = "";
+      $("#profSaveBtn").innerHTML = '<span id="profSaveBtnText">Save</span><span class="save-dots" id="profSaveDots" style="display:none"><span></span><span></span><span></span></span>';
+    }, 600);
+
+    // Switch to view mode and update UI
+    setEditMode(false);
+    populateProfile(currentProfile);
+
+    // Update hero
+    profOriginalUsername = currentProfile.username || "";
+
+    // Recalculate completion and maybe fire confetti
+    const newPct = calcCompletion(currentProfile);
+    animateCompletion(newPct);
+    if (newPct === 100 && prevCompletion < 100) {
+      setTimeout(fireConfetti, 700);
+    }
+
+    if (wasFirstUsername) {
+      toast(`Your handle @${newUsername} is live! 🎉`, "good");
+    } else {
+      toast("Profile saved! ✓", "good");
+    }
+    vibrate(80);
+
+  } catch(e) {
+    // Restore button
+    btnTextEl.style.display = "";
+    dotsEl.style.display    = "none";
+    $("#profSaveBtn").disabled = false;
+
+    // Shake button
+    shake($("#profSaveBtn"));
+
+    if (e.message && e.message.toLowerCase().includes("unique")) {
+      toast("That username was just taken, try another", "bad");
+    } else {
+      toast(!navigator.onLine ? "You're offline" : (e.message || "Save failed"), "bad");
+    }
+  } finally {
+    $("#profSaveBtn").disabled = false;
+  }
+});
+
+/* Init privacy chip indices from loaded data */
+function syncPrivacyChipIndices(profile) {
+  const priv = profile.privacy_settings || {};
+  msgIdx  = priv.messages === "friends" ? 1 : 0;
+  const sl = priv.show_last_seen || "everyone";
+  seenIdx = sl === "friends" ? 1 : sl === "nobody" ? 2 : 0;
+}
+
+
+
+/* =================== FLOATING ISLAND TAB BAR =================== */
+(function() {
+  const island = document.getElementById('tab-island');
+  const buttons = island.querySelectorAll('.tab-btn');
+  let activeTab = null;
+
+  const ICON_MAP = {
+    chats:         { off: 'ph-chats',         on: 'ph-chats-fill' },
+    discover:      { off: 'ph-compass',        on: 'ph-compass-fill' },
+    notifications: { off: 'ph-bell',           on: 'ph-bell-fill' },
+    profile:       { off: 'ph-user-circle',    on: 'ph-user-circle-fill' }
+  };
+
+  function setActiveTab(tab) {
+    if (activeTab === tab) return;
+    activeTab = tab;
+
+    buttons.forEach(btn => {
+      const t = btn.dataset.tab;
+      const icons = ICON_MAP[t];
+      const iconEl = btn.querySelector('i');
+
+      if (t === tab) {
+        btn.classList.add('active');
+        iconEl.className = 'ph ' + icons.on;
+      } else {
+        btn.classList.remove('active');
+        iconEl.className = 'ph ' + icons.off;
+      }
+    });
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+
+      if (tab === 'notifications') {
+        // Hide badge on tap
+        const badge = document.getElementById('notifBadge');
+        if (badge) badge.classList.add('hidden');
+      }
+
+      // Hide all placeholders
+      ['chats','discover','notifications'].forEach(t => {
+        const el = document.getElementById('placeholder-' + t);
+        if (el) el.classList.remove('active');
+      });
+
+      if (tab === 'profile') {
+        // Show profile fullscreen
+        const profilePage = document.getElementById('page-profile');
+        profilePage.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        if (currentUser && !currentProfile) {
+          initProfilePage();
+        }
+      } else if (tab === 'chats' || tab === 'discover' || tab === 'notifications') {
+        // Hide profile if open
+        const profilePage = document.getElementById('page-profile');
+        profilePage.classList.remove('active');
+        document.body.style.overflow = 'hidden';
+        // Show placeholder
+        const ph = document.getElementById('placeholder-' + tab);
+        if (ph) ph.classList.add('active');
+      } else {
+        // Hide profile if open
+        const profilePage = document.getElementById('page-profile');
+        profilePage.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+
+      setActiveTab(tab);
+    });
+  });
+
+  // Set initial slider position after fonts load
+  window.addEventListener('load', () => {
+    // Default: no tab active on auth screen
+    // Will be activated by showHome()
+  });
+
+  // Expose for use in showHome
+  window.setActiveTabIsland = setActiveTab;
+  window.openProfileIsland = function() {
+    setActiveTab('profile');
+    const profilePage = document.getElementById('page-profile');
+    profilePage.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  };
+})();
+
+/* Override profBackBtn to close fullscreen instead of navigating */
+(function() {
+  const origBack = document.getElementById('profBackBtn');
+  // Remove existing listener by replacing with clone
+  const newBack = origBack.cloneNode(true);
+  origBack.parentNode.replaceChild(newBack, origBack);
+
+  newBack.addEventListener('click', () => {
+    if (profEditMode) {
+      setEditMode(false);
+    } else {
+      // Close fullscreen profile
+      const profilePage = document.getElementById('page-profile');
+      profilePage.classList.remove('active');
+      document.body.style.overflow = '';
+      // Hide placeholders too
+      ['chats','discover','notifications'].forEach(t => {
+        const el = document.getElementById('placeholder-' + t);
+        if (el) el.classList.remove('active');
+      });
+      // Reset island to no active tab unless logged in
+      if (currentUser) {
+        // deactivate profile tab visually
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          if (b.dataset.tab !== 'profile') return;
+          b.classList.remove('active');
+          b.querySelector('i').className = 'ph ph-user-circle';
+        });
+        window.setActiveTabIsland && (window._activeTabIsland = null);
+      }
+    }
+  });
+})();
+
+/* showHome patched inline below */
+
+
+/* =================== INLINE PER-ROW SAVE HANDLERS =================== */
+(function() {
+  const FIELD_TO_INPUT = {
+    full_name:    "profNameInput",
+    username:     "profUserInput",
+    location:     "profLocInput",
+    phone_number: "profPhoneInput"
+  };
+  const FIELD_TO_VAL = {
+    full_name:    "profNameVal",
+    username:     "profUserVal",
+    location:     "profLocVal",
+    phone_number: "profPhoneVal"
+  };
+  const FIELD_TO_EXPAND = {
+    full_name:    "profNameExpand",
+    username:     "profUserExpand",
+    location:     "profLocExpand",
+    phone_number: "profPhoneExpand"
+  };
+
+  document.querySelectorAll(".prof-row-save").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!currentUser || !currentProfile) return;
+      const field = btn.dataset.rowSave;
+      const inputId = FIELD_TO_INPUT[field];
+      const valId   = FIELD_TO_VAL[field];
+      const input = document.getElementById(inputId);
+      const raw = (input.value || "").trim();
+
+      // Validation
+      if (field === "full_name" && !raw) {
+        shake(btn); toast("Full name is required", "bad"); return;
+      }
+      if (field === "username") {
+        if (raw && raw !== profOriginalUsername && !profUsernameValid) {
+          shake(btn); toast("Please choose a valid username", "bad"); return;
+        }
+      }
+
+      const value = raw === "" ? null : raw;
+      if (value === (currentProfile[field] || null)) {
+        // No change — just collapse
+        document.getElementById(FIELD_TO_EXPAND[field]).classList.remove("open");
+        return;
+      }
+
+      const txt  = btn.querySelector(".row-save-text");
+      const dots = btn.querySelector(".row-save-dots");
+      txt.style.display = "none";
+      dots.style.display = "flex";
+      btn.disabled = true;
+
+      try {
+        const { error } = await sb.from("users")
+          .update({ [field]: value })
+          .eq("id", currentUser.id);
+        if (error) throw error;
+
+        currentProfile[field] = value;
+        if (field === "username") profOriginalUsername = value || "";
+
+        // Update display value
+        const valEl = document.getElementById(valId);
+        if (valEl) {
+          if (value) {
+            valEl.textContent = field === "username" ? "@" + value : value;
+            valEl.classList.remove("muted");
+          } else {
+            valEl.textContent = field === "phone_number" ? "Not added" : "Not set";
+            valEl.classList.add("muted");
+          }
+        }
+
+        // Saved state
+        btn.classList.add("saved");
+        dots.style.display = "none";
+        btn.innerHTML = '<i class="ph ph-check" style="font-size:18px;"></i>';
+        vibrate(40);
+
+        setTimeout(() => {
+          // Collapse row
+          document.getElementById(FIELD_TO_EXPAND[field]).classList.remove("open");
+          document.querySelectorAll(".prof-row.dimmed").forEach(el => el.classList.remove("dimmed"));
+          // Restore button
+          btn.classList.remove("saved");
+          btn.disabled = false;
+          btn.innerHTML =
+            '<span class="row-save-text">Save</span>' +
+            '<span class="row-save-dots" style="display:none"><span></span><span></span><span></span></span>';
+          // Update completion
+          if (typeof animateCompletion === "function" && typeof calcCompletion === "function") {
+            animateCompletion(calcCompletion(currentProfile));
+          }
+        }, 650);
+
+      } catch(err) {
+        txt.style.display = "";
+        dots.style.display = "none";
+        btn.disabled = false;
+        shake(btn);
+        const m = (err && err.message || "").toLowerCase();
+        if (m.includes("unique")) toast("That username was just taken", "bad");
+        else toast(!navigator.onLine ? "You're offline" : (err.message || "Save failed"), "bad");
+      }
+    });
+  });
+})();
+
+</script>
+</body>
+</html>
