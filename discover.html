@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#1d4ed8" />
+<title>NovaChat — Discover</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='%23fb923c'/><path d='M16 26 Q24 18 32 22 Q40 26 48 18' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round'/><path d='M16 32 Q24 24 32 28 Q40 32 48 24' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round' opacity='0.7'/><path d='M16 38 Q24 30 32 34 Q40 38 48 30' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round' opacity='0.4'/></svg>" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<style>
+:root {
+  --bg: #ddeeff;
+  --card: #f0f6ff;
+  --ink: #0b1b3a;
+  --ink-soft: #5b6b8c;
+  --muted: #9aa6c2;
+  --line: #e3eaf6;
+  --surface: #c9dcf6;
+  --surface-2: #bcd2f0;
+  --surface-border: #a8c2e8;
+  --brand: #1d4ed8;
+  --brand-2: #3b82f6;
+  --brand-glow: rgba(29,78,216,.35);
+  --good: #22c55e;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+  --radius: 16px;
+  --radius-lg: 22px;
+  --shadow: 0 18px 40px -18px rgba(15,40,90,.25);
+  --transition: .25s cubic-bezier(.4,.0,.2,1);
+  --sheet-bg: #fff;
+}
+
+[data-theme="dark"] {
+  --bg: #0c1526;
+  --card: #111e35;
+  --ink: #e8f0ff;
+  --ink-soft: #8a9bbf;
+  --muted: #5a6a8a;
+  --line: #1e2d4a;
+  --surface: #1a2a46;
+  --surface-2: #162238;
+  --surface-border: #2a3d60;
+  --brand: #3b82f6;
+  --brand-2: #60a5fa;
+  --brand-glow: rgba(59,130,246,.35);
+  --good: #22c55e;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+  --shadow: 0 18px 40px -18px rgba(0,0,0,.55);
+  --sheet-bg: #111e35;
+}
+
+*, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; height: 100%; }
+
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(1000px 500px at 80% -10%, #c8dcff 0%, transparent 60%),
+    radial-gradient(800px 500px at -10% 100%, #b8d0ff 0%, transparent 55%),
+    radial-gradient(600px 400px at 50% 50%, #d8e8ff 0%, transparent 70%),
+    #e8f0ff;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+[data-theme="dark"] body {
+  background:
+    radial-gradient(1000px 500px at 80% -10%, #0d1f40 0%, transparent 60%),
+    radial-gradient(800px 500px at -10% 100%, #091830 0%, transparent 55%),
+    radial-gradient(600px 400px at 50% 50%, #0e1d38 0%, transparent 70%),
+    #0c1526;
+}
+
+/* ── Offline banner ── */
+#offlineBanner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: var(--bad); color: #fff; text-align: center;
+  padding: 10px 14px; font-size: 13px; font-weight: 600;
+  transform: translateY(-100%); transition: transform .35s ease;
+}
+#offlineBanner.show { transform: translateY(0); }
+
+/* ── Top island ── */
+#topIsland {
+  position: fixed; top: calc(12px + env(safe-area-inset-top,0px));
+  left: 50%; transform: translateX(-50%);
+  width: calc(100% - 32px); max-width: 440px; z-index: 100;
+  background: rgba(255,255,255,.55);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  backdrop-filter: blur(28px) saturate(200%);
+  border: 1.5px solid rgba(255,255,255,.80);
+  border-radius: 28px;
+  box-shadow: 0 8px 32px -8px rgba(29,78,216,.18), 0 2px 12px -2px rgba(29,78,216,.10), 0 0 0 1px rgba(255,255,255,.6) inset;
+  padding: 0 16px;
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+[data-theme="dark"] #topIsland {
+  background: rgba(17,30,53,.72);
+  border-color: rgba(255,255,255,.10);
+}
+.topIsland-title {
+  font-size: 18px; font-weight: 800; color: var(--ink); letter-spacing: -.3px;
+}
+.topIsland-right { display: flex; align-items: center; gap: 8px; }
+.people-pill {
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  color: #fff; border-radius: 999px;
+  padding: 4px 12px; font-size: 12px; font-weight: 700;
+  box-shadow: 0 2px 8px var(--brand-glow);
+}
+.sort-btn {
+  background: var(--surface); border: none; border-radius: 999px;
+  padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--ink-soft);
+  cursor: pointer; display: flex; align-items: center; gap: 4px;
+  font-family: inherit; transition: background var(--transition);
+}
+.sort-btn:active { background: var(--surface-2); }
+
+/* ── Sort dropdown ── */
+#sortDropdown {
+  position: fixed; z-index: 200;
+  background: var(--sheet-bg);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  top: calc(76px + env(safe-area-inset-top,0px));
+  right: calc((100% - min(440px, 100% - 32px)) / 2 + 16px);
+  min-width: 160px;
+  display: none;
+}
+#sortDropdown.open { display: block; }
+.sort-opt {
+  padding: 13px 18px; font-size: 14px; font-weight: 500; cursor: pointer;
+  color: var(--ink); display: flex; align-items: center; gap: 10px;
+  transition: background var(--transition);
+}
+.sort-opt:hover, .sort-opt.active { background: var(--surface); color: var(--brand); }
+.sort-opt + .sort-opt { border-top: 1px solid var(--line); }
+
+/* ── Main scroll area ── */
+#mainScroll {
+  padding-top: calc(80px + env(safe-area-inset-top,0px));
+  padding-bottom: calc(100px + env(safe-area-inset-bottom,0px));
+  padding-left: 16px; padding-right: 16px;
+  max-width: 440px; margin: 0 auto;
+}
+
+/* ── Search bar ── */
+.search-wrap {
+  position: relative; margin: 14px 0 10px;
+}
+.search-wrap i {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 18px; color: var(--muted); pointer-events: none;
+}
+#searchInput {
+  width: 100%; padding: 12px 16px 12px 42px;
+  background: rgba(255,255,255,.65);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255,255,255,.80);
+  border-radius: 999px; font-size: 14px; font-weight: 500;
+  color: var(--ink); font-family: inherit;
+  box-shadow: 0 2px 12px rgba(29,78,216,.08);
+  outline: none; transition: border-color var(--transition), box-shadow var(--transition);
+}
+[data-theme="dark"] #searchInput {
+  background: rgba(17,30,53,.6); border-color: var(--line);
+}
+#searchInput::placeholder { color: var(--muted); }
+#searchInput:focus { border-color: var(--brand-2); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+
+/* ── Filter tabs ── */
+.filter-tabs {
+  display: flex; gap: 8px; margin: 8px 0 10px;
+}
+.filter-tab {
+  padding: 7px 18px; border-radius: 999px; font-size: 13px; font-weight: 700;
+  border: none; cursor: pointer; font-family: inherit;
+  color: var(--ink-soft); background: transparent;
+  transition: all var(--transition);
+}
+.filter-tab.active {
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  color: #fff; box-shadow: 0 4px 14px var(--brand-glow);
+}
+
+/* ── Location chips ── */
+#locationChips {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.loc-chip {
+  padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: var(--surface); color: var(--ink-soft); border: 1.5px solid var(--surface-border);
+  cursor: pointer; transition: all var(--transition);
+}
+.loc-chip.active {
+  background: var(--brand); color: #fff; border-color: var(--brand);
+}
+
+/* ── People You May Know ── */
+.section-label {
+  font-size: 11px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase;
+  color: var(--muted); margin: 12px 0 8px;
+}
+#maybePeople {
+  display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px;
+  scrollbar-width: none; -ms-overflow-style: none;
+  margin-bottom: 4px;
+}
+#maybePeople::-webkit-scrollbar { display: none; }
+.maybe-card {
+  flex: 0 0 auto; width: 120px;
+  background: rgba(255,255,255,.65);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255,255,255,.80);
+  border-radius: var(--radius); padding: 14px 10px 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer; box-shadow: 0 4px 16px rgba(29,78,216,.07);
+}
+[data-theme="dark"] .maybe-card { background: rgba(17,30,53,.6); border-color: var(--line); }
+.maybe-card .av { width: 48px; height: 48px; flex-shrink: 0; }
+.maybe-card .mc-name { font-size: 12px; font-weight: 700; color: var(--ink); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.maybe-card .mc-handle { font-size: 11px; color: var(--muted); }
+.maybe-card .mc-follow {
+  padding: 5px 14px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  border: 1.5px solid var(--brand); color: var(--brand); background: transparent;
+  cursor: pointer; font-family: inherit; transition: all var(--transition);
+}
+.maybe-card .mc-follow.following { background: rgba(34,197,94,.12); border-color: var(--good); color: var(--good); }
+
+/* ── Trending strip ── */
+#trendingSection { margin-bottom: 4px; }
+.trending-header {
+  display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+}
+.trending-header-right { font-size: 12px; color: var(--muted); }
+#trendingList {
+  display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px;
+  scrollbar-width: none; -ms-overflow-style: none; margin-top: 8px;
+}
+#trendingList::-webkit-scrollbar { display: none; }
+#trendingList.collapsed { display: none; }
+.trending-card {
+  flex: 0 0 auto; width: 100px;
+  background: rgba(255,255,255,.65); backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255,255,255,.80);
+  border-radius: var(--radius); padding: 12px 8px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  cursor: pointer; box-shadow: 0 4px 16px rgba(29,78,216,.07);
+}
+[data-theme="dark"] .trending-card { background: rgba(17,30,53,.6); border-color: var(--line); }
+.trending-rank { font-size: 10px; font-weight: 800; color: var(--brand); letter-spacing: .5px; }
+.trending-card .tc-name { font-size: 11px; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--ink); }
+.trending-card .tc-followers { font-size: 10px; color: var(--muted); }
+
+/* ── Avatar ── */
+.av {
+  position: relative; width: 48px; height: 48px; border-radius: 50%;
+  flex-shrink: 0; overflow: visible;
+}
+.av-img, .av-ini {
+  width: 100%; height: 100%; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 800; color: var(--brand);
+  overflow: hidden;
+}
+.av-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+/* Progress ring */
+.av-ring {
+  position: absolute; inset: -3px; pointer-events: none;
+}
+.av-ring circle { transition: stroke-dashoffset .5s ease; }
+
+.av .online-dot {
+  position: absolute; bottom: 1px; right: 1px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--good); border: 2px solid #fff;
+  animation: none;
+}
+.av .online-dot.pulse { animation: onlinePulse 2s ease-in-out infinite; }
+
+@keyframes onlinePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.45); }
+}
+
+/* ── User list ── */
+#userList { display: flex; flex-direction: column; gap: 8px; }
+
+.user-card {
+  background: rgba(255,255,255,.68);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255,255,255,.82);
+  border-radius: var(--radius-lg);
+  padding: 14px 14px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; box-shadow: 0 4px 20px rgba(29,78,216,.07);
+  transition: transform var(--transition), box-shadow var(--transition);
+  position: relative;
+}
+[data-theme="dark"] .user-card { background: rgba(17,30,53,.65); border-color: var(--line); }
+.user-card:active { transform: scale(.98); }
+
+.user-info { flex: 1; min-width: 0; }
+.user-name-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.user-name {
+  font-size: 15px; font-weight: 700; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.verified-icon { font-size: 15px; color: var(--brand); flex-shrink: 0; }
+.new-badge {
+  background: var(--warn); color: #fff; border-radius: 999px;
+  padding: 1px 7px; font-size: 10px; font-weight: 800; letter-spacing: .3px;
+}
+.follows-you-pill {
+  background: rgba(29,78,216,.1); color: var(--brand); border-radius: 999px;
+  padding: 2px 8px; font-size: 10px; font-weight: 700;
+}
+.user-handle { font-size: 13px; color: var(--muted); margin-top: 1px; }
+.user-status { font-size: 12px; margin-top: 2px; }
+.user-status.online { color: var(--good); font-weight: 600; }
+.user-status.offline { color: var(--muted); }
+.muted-icon { font-size: 13px; color: var(--muted); margin-left: 3px; }
+
+.follow-btn {
+  flex-shrink: 0; padding: 8px 16px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+  border: 1.5px solid var(--brand); color: var(--brand); background: transparent;
+  transition: all var(--transition);
+}
+.follow-btn.following {
+  background: rgba(34,197,94,.12); border-color: var(--good); color: var(--good);
+}
+
+/* ── Skeleton ── */
+.skeleton-card {
+  background: rgba(255,255,255,.6); backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255,255,255,.78);
+  border-radius: var(--radius-lg); padding: 14px;
+  display: flex; align-items: center; gap: 12px;
+}
+.sk { border-radius: 999px; background: linear-gradient(90deg, var(--line) 25%, var(--surface) 50%, var(--line) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.sk-av { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; }
+.sk-lines { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+.sk-line { height: 12px; }
+.sk-btn { width: 72px; height: 34px; flex-shrink: 0; border-radius: 999px; }
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center; padding: 48px 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.empty-state i { font-size: 48px; color: var(--muted); }
+.empty-state p { font-size: 15px; color: var(--ink-soft); font-weight: 500; line-height: 1.5; margin: 0; }
+
+/* ── Bottom tab bar ── */
+#tab-island {
+  position: fixed;
+  bottom: calc(18px + env(safe-area-inset-bottom,0px));
+  left: 50%; transform: translateX(-50%);
+  width: calc(100% - 32px); max-width: 440px;
+  background: rgba(255,255,255,.55);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  backdrop-filter: blur(28px) saturate(200%);
+  border: 1.5px solid rgba(255,255,255,.80);
+  border-radius: 28px;
+  box-shadow: 0 8px 32px -8px rgba(29,78,216,.18), 0 2px 12px -2px rgba(29,78,216,.10), 0 0 0 1px rgba(255,255,255,.6) inset;
+  padding: 8px;
+  display: flex; justify-content: space-around; align-items: center;
+  z-index: 200;
+}
+[data-theme="dark"] #tab-island { background: rgba(17,30,53,.72); border-color: rgba(255,255,255,.10); }
+.tab-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  border: none; background: transparent;
+  font-size: 10px; font-weight: 800; color: var(--ink);
+  cursor: pointer; position: relative; padding: 8px 4px 6px;
+  border-radius: 18px; transition: color .22s ease;
+  font-family: inherit; letter-spacing: .3px;
+  flex: 1 1 0; min-width: 0; isolation: isolate;
+}
+.tab-btn i { font-size: 22px; transition: transform .25s cubic-bezier(.4,0,.2,1); position: relative; z-index: 1; color: var(--ink); display: block; }
+.tab-btn span:not(.notif-badge) { position: relative; z-index: 1; color: var(--ink); }
+.tab-btn::before {
+  content: ""; position: absolute; inset: 4px 6px; border-radius: 16px;
+  transform: scale(.85);
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  box-shadow: 0 4px 18px -4px rgba(29,78,216,.45);
+  opacity: 0; transition: opacity .22s ease, transform .25s cubic-bezier(.34,1.4,.64,1);
+  z-index: 0; pointer-events: none;
+}
+.tab-btn:active i { transform: scale(.86); }
+.tab-btn.active { color: #fff; }
+.tab-btn.active i { color: #fff; }
+.tab-btn.active::before { opacity: 1; transform: scale(1); }
+.tab-btn.active span:not(.notif-badge) { color: #fff; }
+.notif-badge {
+  position: absolute; top: 4px; right: calc(50% - 18px);
+  width: 8px; height: 8px; background: var(--bad);
+  border-radius: 50%; border: 2px solid #fff;
+  transition: transform .2s ease, opacity .2s ease; z-index: 2;
+}
+.notif-badge.hidden { transform: scale(0); opacity: 0; }
+
+/* ── Toast ── */
+#toastContainer {
+  position: fixed; top: calc(72px + env(safe-area-inset-top,0px));
+  left: 50%; transform: translateX(-50%);
+  z-index: 9000; width: calc(100% - 32px); max-width: 440px;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.notif-card {
+  background: rgba(255,255,255,.9); backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255,255,255,.9); border-radius: var(--radius);
+  padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+  box-shadow: var(--shadow); animation: toastIn .35s cubic-bezier(.34,1.4,.64,1) both;
+  pointer-events: auto;
+}
+[data-theme="dark"] .notif-card { background: rgba(17,30,53,.9); border-color: var(--line); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-14px) scale(.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.notif-card.fade-out { animation: toastOut .3s ease forwards; }
+@keyframes toastOut { to { opacity: 0; transform: translateY(-8px) scale(.95); } }
+.notif-card i { font-size: 20px; }
+.notif-card .notif-text { font-size: 13px; font-weight: 600; color: var(--ink); }
+
+/* ── Mini profile sheet ── */
+#sheetOverlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(11,27,58,.55); backdrop-filter: blur(14px);
+  opacity: 0; pointer-events: none; transition: opacity .3s ease;
+}
+#sheetOverlay.open { opacity: 1; pointer-events: all; }
+
+#profileSheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 501;
+  background: var(--sheet-bg); border-radius: 28px 28px 0 0;
+  max-height: 88vh; overflow-y: auto;
+  transform: translateY(100%); transition: transform .38s cubic-bezier(.34,1.2,.64,1);
+  -webkit-overflow-scrolling: touch;
+}
+#profileSheet.open { transform: translateY(0); }
+
+.sheet-handle {
+  width: 36px; height: 4px; border-radius: 999px;
+  background: var(--line); margin: 14px auto 0;
+}
+
+/* Hero */
+.sheet-hero {
+  background: linear-gradient(165deg, #1d6ffc 0%, #1e54e8 35%, #1743c8 65%, #1232a8 100%);
+  padding: 24px 20px 28px; text-align: center; position: relative;
+}
+.sheet-share-btn {
+  position: absolute; top: 16px; right: 16px;
+  background: rgba(255,255,255,.2); border: none; border-radius: 50%;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #fff; font-size: 18px;
+  transition: background var(--transition);
+}
+.sheet-share-btn:active { background: rgba(255,255,255,.35); }
+
+.sheet-av {
+  width: 80px; height: 80px; border-radius: 50%;
+  margin: 0 auto 12px; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 800; color: var(--brand);
+  background: #fff; overflow: hidden;
+  border: 3px solid rgba(255,255,255,.3);
+}
+.sheet-av img { width: 100%; height: 100%; object-fit: cover; }
+.sheet-av .online-dot {
+  position: absolute; bottom: 3px; right: 3px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--good); border: 3px solid #fff;
+  animation: onlinePulse 2s ease-in-out infinite;
+}
+.sheet-full-name {
+  font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 3px; letter-spacing: -.3px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.sheet-username { font-size: 14px; color: rgba(255,255,255,.7); margin: 0 0 4px; }
+.sheet-status { font-size: 12px; color: rgba(255,255,255,.6); }
+.sheet-badges { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; }
+.mutuals-pill {
+  background: rgba(255,255,255,.18); color: rgba(255,255,255,.9);
+  border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+.chatted-chip {
+  background: rgba(255,255,255,.18); color: rgba(255,255,255,.85);
+  border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* Stats */
+.sheet-stats {
+  display: flex; border-bottom: 1px solid var(--line);
+}
+.stat-col {
+  flex: 1; text-align: center; padding: 16px 8px;
+  border-right: 1px solid var(--line); position: relative;
+}
+.stat-col:last-child { border-right: none; }
+.stat-val { font-size: 18px; font-weight: 800; color: var(--ink); }
+.stat-lbl { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.stat-spinner { width: 18px; height: 18px; margin: 0 auto; border: 2px solid var(--line); border-top-color: var(--brand); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Bio */
+.sheet-bio { padding: 14px 20px; font-size: 14px; color: var(--ink-soft); line-height: 1.6; border-bottom: 1px solid var(--line); }
+
+/* Action buttons */
+.sheet-actions { display: flex; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.action-btn {
+  flex: 1; padding: 12px; border-radius: var(--radius); font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: all var(--transition);
+}
+.action-btn.message { background: transparent; border: 1.5px solid var(--line); color: var(--ink); }
+.action-btn.follow-action { background: linear-gradient(135deg, var(--brand), var(--brand-2)); border: none; color: #fff; box-shadow: 0 4px 14px var(--brand-glow); }
+.action-btn.follow-action.following-action { background: rgba(34,197,94,.12); border: 1.5px solid var(--good); color: var(--good); box-shadow: none; }
+
+/* Details */
+.sheet-details { padding: 14px 20px; }
+.detail-section-label { font-size: 11px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.detail-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.detail-row i { font-size: 17px; color: var(--muted); flex-shrink: 0; }
+.detail-row span { font-size: 13px; color: var(--ink-soft); }
+
+/* Social links */
+.sheet-social { padding: 0 20px 12px; }
+
+/* Danger zone */
+.sheet-danger { padding: 10px 20px 28px; display: flex; gap: 16px; border-top: 1px solid var(--line); margin-top: 4px; }
+.danger-btn {
+  background: none; border: none; font-size: 13px; font-weight: 600;
+  color: var(--bad); cursor: pointer; font-family: inherit; padding: 4px 0;
+  display: flex; align-items: center; gap: 5px;
+}
+.mute-btn {
+  background: none; border: none; font-size: 13px; font-weight: 600;
+  color: var(--muted); cursor: pointer; font-family: inherit; padding: 4px 0;
+  display: flex; align-items: center; gap: 5px;
+}
+</style>
+</head>
+<body>
+
+<div id="offlineBanner">You're offline — check your connection</div>
+<div id="toastContainer"></div>
+
+<!-- Top island -->
+<header id="topIsland">
+  <div class="topIsland-title">Discover</div>
+  <div class="topIsland-right">
+    <span class="people-pill" id="peoplePill">— people</span>
+    <button class="sort-btn" id="sortBtn" onclick="toggleSort()">
+      <i class="ph ph-sort-ascending"></i> Sort
+    </button>
+  </div>
+</header>
+
+<!-- Sort dropdown -->
+<div id="sortDropdown">
+  <div class="sort-opt active" data-sort="online" onclick="setSort('online')"><i class="ph ph-wifi-high"></i> Online first</div>
+  <div class="sort-opt" data-sort="newest" onclick="setSort('newest')"><i class="ph ph-clock-clockwise"></i> Newest</div>
+  <div class="sort-opt" data-sort="az" onclick="setSort('az')"><i class="ph ph-sort-alphabetical-asc"></i> A–Z</div>
+</div>
+
+<!-- Main scroll area -->
+<main id="mainScroll">
+  <!-- Search -->
+  <div class="search-wrap">
+    <i class="ph ph-magnifying-glass"></i>
+    <input type="search" id="searchInput" placeholder="Search by name or username…" autocomplete="off" />
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="filter-tabs">
+    <button class="filter-tab active" data-tab="all" onclick="setTab('all')">All</button>
+    <button class="filter-tab" data-tab="online" onclick="setTab('online')">Online</button>
+    <button class="filter-tab" data-tab="following" onclick="setTab('following')">Following</button>
+  </div>
+
+  <!-- Location chips -->
+  <div id="locationChips"></div>
+
+  <!-- People you may know -->
+  <div id="maybePeopleSection" style="display:none">
+    <div class="section-label">People you may know</div>
+    <div id="maybePeople"></div>
+  </div>
+
+  <!-- Trending -->
+  <div id="trendingSection" style="display:none">
+    <div class="trending-header" onclick="toggleTrending()">
+      <div class="section-label" style="margin:0">Trending this week 🔥</div>
+      <span class="trending-header-right" id="trendingChevron">▾</span>
+    </div>
+    <div id="trendingList"></div>
+  </div>
+
+  <!-- User list -->
+  <div id="userList"></div>
+</main>
+
+<!-- Bottom tab bar -->
+<nav id="tab-island">
+  <button class="tab-btn" aria-label="Chats" onclick="window.location.href='chats.html'">
+    <i class="ph ph-chats"></i><span>Chats</span>
+  </button>
+  <button class="tab-btn active" aria-label="Discover" onclick="window.location.href='discover.html'">
+    <i class="ph ph-compass"></i><span>Discover</span>
+  </button>
+  <button class="tab-btn" aria-label="Notifications" onclick="window.location.href='notifications.html'">
+    <i class="ph ph-bell"></i>
+    <span class="notif-badge hidden" id="notifBadge"></span>
+    <span>Alerts</span>
+  </button>
+  <button class="tab-btn" aria-label="Profile" onclick="window.location.href='profile.html'">
+    <i class="ph ph-user-circle"></i><span>Profile</span>
+  </button>
+</nav>
+
+<!-- Sheet overlay -->
+<div id="sheetOverlay" onclick="closeSheet()"></div>
+
+<!-- Mini profile sheet -->
+<div id="profileSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hero" id="sheetHero">
+    <button class="sheet-share-btn" onclick="shareProfile()" title="Share profile">
+      <i class="ph ph-share-network"></i>
+    </button>
+    <div class="sheet-av" id="sheetAv"></div>
+    <div class="sheet-full-name" id="sheetName"></div>
+    <div class="sheet-username" id="sheetUsername"></div>
+    <div class="sheet-status" id="sheetStatus"></div>
+    <div class="sheet-badges" id="sheetBadges"></div>
+  </div>
+  <div class="sheet-stats" id="sheetStats">
+    <div class="stat-col"><div class="stat-spinner"></div><div class="stat-lbl">Followers</div></div>
+    <div class="stat-col"><div class="stat-spinner"></div><div class="stat-lbl">Following</div></div>
+    <div class="stat-col"><div id="sheetJoined" class="stat-val">—</div><div class="stat-lbl">Joined</div></div>
+  </div>
+  <div class="sheet-bio" id="sheetBio" style="display:none"></div>
+  <div class="sheet-actions">
+    <button class="action-btn message" id="sheetMsgBtn"><i class="ph ph-chat-circle"></i> Message</button>
+    <button class="action-btn follow-action" id="sheetFollowBtn" onclick="sheetToggleFollow()"></button>
+  </div>
+  <div class="sheet-details" id="sheetDetails"></div>
+  <div class="sheet-social" id="sheetSocial"></div>
+  <div class="sheet-danger">
+    <button class="mute-btn" id="sheetMuteBtn" onclick="sheetToggleMute()"><i class="ph ph-speaker-slash"></i> <span id="sheetMuteLabel">Mute</span></button>
+    <button class="danger-btn" onclick="sheetBlock()"><i class="ph ph-prohibit"></i> Block</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const SUPABASE_URL = "https://akmwzymifytmuinbyeif.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QhVT2UQmI0_ZNg47vcs0eg_-jt4hP_A";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let me = null;
+let allUsers = [];
+let followingSet = new Set();
+let followersOfMeSet = new Set(); // users who follow me
+let mutedSet = new Set();
+let blockedSet = new Set();
+let activeTab = 'all';
+let activeSort = 'online';
+let searchQ = '';
+let activeLocation = null;
+let sheetUser = null;
+let trendingCollapsed = false;
+let myFollowingList = []; // IDs I follow
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function initialsOf(name) {
+  const parts = (name || "?").trim().split(" ");
+  return (parts[0][0] + (parts[1]?.[0] || "")).toUpperCase();
+}
+function avatarColor(name) {
+  const colors = ["#dbeafe","#ede9fe","#dcfce7","#fef9c3","#fee2e2","#ffedd5","#e0f2fe","#fce7f3"];
+  let hash = 0;
+  for (const c of (name || "")) hash = (hash * 31 + c.charCodeAt(0)) & 0xffff;
+  return colors[hash % colors.length];
+}
+function timeAgo(iso) {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days  = Math.floor(diff / 86400000);
+  if (mins  < 2)   return "just now";
+  if (mins  < 60)  return `${mins}m ago`;
+  if (hours < 24)  return `${hours}h ago`;
+  if (days  === 1) return "yesterday";
+  return `${days}d ago`;
+}
+function joinedLabel(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleString('default', { month: 'short', year: 'numeric' });
+}
+function isNew(iso) {
+  if (!iso) return false;
+  return (Date.now() - new Date(iso).getTime()) < 7 * 86400000;
+}
+function completionPct(u) {
+  const fields = [u.full_name, u.username, u.bio, u.avatar_url, u.phone_number,
+    (u.social_links && Object.keys(u.social_links).length > 0) ? "1" : null];
+  return Math.round(fields.filter(Boolean).length / fields.length * 100);
+}
+function canShowLastSeen(u, isFollowingThem) {
+  const priv = u.privacy_settings?.show_last_seen || "everyone";
+  if (priv === "everyone") return true;
+  if (priv === "followers") return isFollowingThem;
+  return false;
+}
+
+// ══════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════
+function toast(msg, type = "info") {
+  const icons = { info: "ph-info", good: "ph-check-circle", bad: "ph-x-circle" };
+  const colors = { info: "var(--brand)", good: "var(--good)", bad: "var(--bad)" };
+  const el = document.createElement("div");
+  el.className = "notif-card";
+  el.innerHTML = `<i class="ph ${icons[type] || icons.info}" style="color:${colors[type] || colors.info}"></i><span class="notif-text">${msg}</span>`;
+  document.getElementById("toastContainer").appendChild(el);
+  setTimeout(() => { el.classList.add("fade-out"); el.addEventListener("animationend", () => el.remove()); }, 3000);
+}
+
+// ══════════════════════════════════════════════════════
+// AVATAR BUILDER
+// ══════════════════════════════════════════════════════
+function buildAv(u, size = 48, showRing = true) {
+  const wrap = document.createElement("div");
+  wrap.className = "av"; wrap.style.width = size + "px"; wrap.style.height = size + "px";
+
+  const inner = document.createElement("div");
+  if (u.avatar_url) {
+    inner.className = "av-img";
+    const img = document.createElement("img");
+    img.src = u.avatar_url; img.alt = u.full_name || "";
+    img.onerror = () => { inner.className = "av-ini"; inner.style.background = avatarColor(u.full_name); inner.innerHTML = initialsOf(u.full_name); delete img; };
+    inner.appendChild(img);
+  } else {
+    inner.className = "av-ini";
+    inner.style.background = avatarColor(u.full_name);
+    inner.style.fontSize = Math.round(size * 0.33) + "px";
+    inner.textContent = initialsOf(u.full_name);
+  }
+  wrap.appendChild(inner);
+
+  // Progress ring
+  if (showRing) {
+    const pct = completionPct(u);
+    if (pct < 100) {
+      const r = size / 2 + 3; const circ = 2 * Math.PI * r;
+      const offset = circ * (1 - pct / 100);
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", `0 0 ${size + 6} ${size + 6}`);
+      svg.setAttribute("width", size + 6); svg.setAttribute("height", size + 6);
+      svg.className = "av-ring";
+      svg.style.cssText = "position:absolute;inset:-3px;pointer-events:none;";
+      const bg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      bg.setAttribute("cx", r); bg.setAttribute("cy", r); bg.setAttribute("r", r - 1.5);
+      bg.setAttribute("fill", "none"); bg.setAttribute("stroke", "var(--line)"); bg.setAttribute("stroke-width", "2.5");
+      const fg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      fg.setAttribute("cx", r); fg.setAttribute("cy", r); fg.setAttribute("r", r - 1.5);
+      fg.setAttribute("fill", "none"); fg.setAttribute("stroke", "var(--brand)"); fg.setAttribute("stroke-width", "2.5");
+      fg.setAttribute("stroke-dasharray", circ); fg.setAttribute("stroke-dashoffset", offset);
+      fg.setAttribute("stroke-linecap", "round");
+      fg.style.transform = "rotate(-90deg)"; fg.style.transformOrigin = "center";
+      svg.appendChild(bg); svg.appendChild(fg); wrap.appendChild(svg);
+    }
+  }
+
+  // Online dot
+  if (u.is_online) {
+    const dot = document.createElement("div");
+    dot.className = "online-dot pulse";
+    dot.style.width = Math.max(8, Math.round(size * 0.2)) + "px";
+    dot.style.height = Math.max(8, Math.round(size * 0.2)) + "px";
+    wrap.appendChild(dot);
+  }
+
+  return wrap;
+}
+
+// ══════════════════════════════════════════════════════
+// FOLLOW / UNFOLLOW
+// ══════════════════════════════════════════════════════
+async function toggleFollow(userId, fromSheet = false) {
+  const isFollowing = followingSet.has(userId);
+  // Optimistic
+  if (isFollowing) { followingSet.delete(userId); } else { followingSet.add(userId); }
+  updateAllFollowButtons(userId);
+
+  try {
+    if (isFollowing) {
+      await sb.from("follows").delete().eq("follower_id", me.id).eq("following_id", userId);
+      const u = allUsers.find(x => x.id === userId);
+      toast(`Unfollowed @${u?.username || "user"}`, "info");
+    } else {
+      await sb.from("follows").insert({ follower_id: me.id, following_id: userId });
+      const u = allUsers.find(x => x.id === userId);
+      toast(`Following @${u?.username || "user"}`, "good");
+      myFollowingList = [...followingSet];
+    }
+  } catch(e) {
+    // Revert
+    if (isFollowing) { followingSet.add(userId); } else { followingSet.delete(userId); }
+    updateAllFollowButtons(userId);
+    toast("Failed — try again", "bad");
+  }
+}
+
+function updateAllFollowButtons(userId) {
+  const isF = followingSet.has(userId);
+  // list buttons
+  document.querySelectorAll(`[data-follow-uid="${userId}"]`).forEach(btn => {
+    btn.textContent = isF ? "Following" : "Follow";
+    btn.classList.toggle("following", isF);
+  });
+  // sheet
+  if (sheetUser?.id === userId) {
+    const sfb = document.getElementById("sheetFollowBtn");
+    sfb.textContent = isF ? "Following" : "Follow";
+    sfb.classList.toggle("following-action", isF);
+  }
+  renderList(); // re-apply filter tab states
+}
+
+// ══════════════════════════════════════════════════════
+// SORT + FILTER + RENDER
+// ══════════════════════════════════════════════════════
+function getFiltered() {
+  let list = allUsers.filter(u => !blockedSet.has(u.id));
+  if (searchQ) list = list.filter(u =>
+    (u.full_name||"").toLowerCase().includes(searchQ) ||
+    (u.username||"").toLowerCase().includes(searchQ)
+  );
+  if (activeTab === 'online')    list = list.filter(u => u.is_online);
+  if (activeTab === 'following') list = list.filter(u => followingSet.has(u.id));
+  if (activeLocation) list = list.filter(u => (u.location||"").toLowerCase().includes(activeLocation.toLowerCase()));
+  // sort
+  if (activeSort === 'online') list.sort((a,b) => (b.is_online ? 1 : 0) - (a.is_online ? 1 : 0));
+  else if (activeSort === 'newest') list.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  else list.sort((a,b) => (a.full_name||"").localeCompare(b.full_name||""));
+  return list;
+}
+
+function renderList() {
+  const list = getFiltered();
+  const el = document.getElementById("userList");
+  document.getElementById("peoplePill").textContent = `${list.length} ${list.length === 1 ? "person" : "people"}`;
+
+  if (!list.length) {
+    el.innerHTML = "";
+    const es = document.createElement("div"); es.className = "empty-state";
+    let msg = "";
+    if (searchQ) { es.innerHTML = `<i class="ph ph-magnifying-glass"></i><p>No results for "<strong>${searchQ}</strong>"</p>`; }
+    else if (activeTab === 'following') { es.innerHTML = `<i class="ph ph-users"></i><p>You're not following anyone yet. Discover people above.</p>`; }
+    else if (activeTab === 'online') { es.innerHTML = `<i class="ph ph-wifi-slash"></i><p>Nobody is online right now.</p>`; }
+    else { es.innerHTML = `<i class="ph ph-smiley-meh"></i><p>No one here yet — invite friends to join NovaChat!</p>`; }
+    el.appendChild(es); return;
+  }
+
+  el.innerHTML = "";
+  list.forEach(u => {
+    const isF = followingSet.has(u.id);
+    const followsMe = followersOfMeSet.has(u.id);
+    const isMuted = mutedSet.has(u.id);
+    const card = document.createElement("div");
+    card.className = "user-card";
+
+    // Avatar
+    const avEl = buildAv(u, 48, true);
+    card.appendChild(avEl);
+
+    // Info
+    const info = document.createElement("div"); info.className = "user-info";
+
+    // Name row
+    const nameRow = document.createElement("div"); nameRow.className = "user-name-row";
+    const nameEl = document.createElement("span"); nameEl.className = "user-name"; nameEl.textContent = u.full_name || u.username || "User";
+    nameRow.appendChild(nameEl);
+    if (u.verified) {
+      const vi = document.createElement("i"); vi.className = "ph-fill ph-seal-check verified-icon";
+      nameRow.appendChild(vi);
+    }
+    if (isNew(u.created_at)) {
+      const nb = document.createElement("span"); nb.className = "new-badge"; nb.textContent = "New";
+      nameRow.appendChild(nb);
+    }
+    if (followsMe) {
+      const fy = document.createElement("span"); fy.className = "follows-you-pill"; fy.textContent = "Follows you";
+      nameRow.appendChild(fy);
+    }
+    if (isMuted) {
+      const mi = document.createElement("i"); mi.className = "ph ph-speaker-slash muted-icon";
+      nameRow.appendChild(mi);
+    }
+    info.appendChild(nameRow);
+
+    const handleEl = document.createElement("div"); handleEl.className = "user-handle"; handleEl.textContent = `@${u.username || "unknown"}`;
+    info.appendChild(handleEl);
+
+    // Status
+    const statusEl = document.createElement("div");
+    if (u.is_online) {
+      statusEl.className = "user-status online"; statusEl.textContent = "Online now";
+    } else {
+      statusEl.className = "user-status offline";
+      if (canShowLastSeen(u, isF)) {
+        statusEl.textContent = u.last_seen ? `Last seen ${timeAgo(u.last_seen)}` : "";
+      }
+    }
+    info.appendChild(statusEl);
+    card.appendChild(info);
+
+    // Follow btn
+    const fBtn = document.createElement("button");
+    fBtn.className = "follow-btn" + (isF ? " following" : "");
+    fBtn.textContent = isF ? "Following" : "Follow";
+    fBtn.setAttribute("data-follow-uid", u.id);
+    fBtn.onclick = (e) => { e.stopPropagation(); toggleFollow(u.id); };
+    card.appendChild(fBtn);
+
+    // Open sheet
+    card.onclick = () => openSheet(u);
+    el.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// SORT UI
+// ══════════════════════════════════════════════════════
+function toggleSort() {
+  document.getElementById("sortDropdown").classList.toggle("open");
+}
+function setSort(s) {
+  activeSort = s;
+  document.querySelectorAll(".sort-opt").forEach(o => o.classList.toggle("active", o.dataset.sort === s));
+  document.getElementById("sortDropdown").classList.remove("open");
+  renderList();
+}
+document.addEventListener("click", e => {
+  if (!e.target.closest("#sortDropdown") && !e.target.closest("#sortBtn"))
+    document.getElementById("sortDropdown").classList.remove("open");
+});
+
+// ══════════════════════════════════════════════════════
+// FILTER TABS
+// ══════════════════════════════════════════════════════
+function setTab(t) {
+  activeTab = t;
+  document.querySelectorAll(".filter-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
+  renderList();
+}
+
+// ══════════════════════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════════════════════
+document.getElementById("searchInput").addEventListener("input", e => {
+  searchQ = e.target.value.trim().toLowerCase();
+  renderList();
+});
+
+// ══════════════════════════════════════════════════════
+// LOCATION CHIPS
+// ══════════════════════════════════════════════════════
+function buildLocationChips() {
+  const locs = [...new Set(allUsers.map(u => u.location).filter(Boolean))];
+  const wrap = document.getElementById("locationChips");
+  wrap.innerHTML = "";
+  if (!locs.length) return;
+  locs.forEach(loc => {
+    const chip = document.createElement("button");
+    chip.className = "loc-chip" + (activeLocation === loc ? " active" : "");
+    chip.textContent = loc;
+    chip.onclick = () => {
+      activeLocation = activeLocation === loc ? null : loc;
+      buildLocationChips(); renderList();
+    };
+    wrap.appendChild(chip);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// PEOPLE YOU MAY KNOW
+// ══════════════════════════════════════════════════════
+async function buildMaybePeople() {
+  try {
+    // 2nd-degree: people my following list also follows
+    if (myFollowingList.length === 0) return;
+    const { data } = await sb.from("follows").select("following_id").in("follower_id", myFollowingList);
+    if (!data?.length) return;
+    const secondDeg = [...new Set(data.map(r => r.following_id))]
+      .filter(id => id !== me.id && !followingSet.has(id));
+    const maybeUsers = allUsers.filter(u => secondDeg.includes(u.id) && !blockedSet.has(u.id)).slice(0, 8);
+    if (!maybeUsers.length) return;
+
+    const section = document.getElementById("maybePeopleSection");
+    const wrap = document.getElementById("maybePeople");
+    wrap.innerHTML = ""; section.style.display = "block";
+    maybeUsers.forEach(u => {
+      const card = document.createElement("div"); card.className = "maybe-card";
+      const av = buildAv(u, 48, false); av.style.margin = "0 auto"; card.appendChild(av);
+      const nm = document.createElement("div"); nm.className = "mc-name"; nm.textContent = u.full_name || u.username;
+      const hd = document.createElement("div"); hd.className = "mc-handle"; hd.textContent = `@${u.username||""}`;
+      const isF = followingSet.has(u.id);
+      const fb = document.createElement("button"); fb.className = "mc-follow" + (isF ? " following" : ""); fb.textContent = isF ? "Following" : "Follow";
+      fb.setAttribute("data-follow-uid", u.id);
+      fb.onclick = (e) => { e.stopPropagation(); toggleFollow(u.id); };
+      card.appendChild(nm); card.appendChild(hd); card.appendChild(fb);
+      card.onclick = (e) => { if (!e.target.closest(".mc-follow")) openSheet(u); };
+      wrap.appendChild(card);
+    });
+  } catch(e) { /* skip silently */ }
+}
+
+// ══════════════════════════════════════════════════════
+// TRENDING
+// ══════════════════════════════════════════════════════
+async function buildTrending() {
+  try {
+    const { data } = await sb.from("follows").select("following_id");
+    if (!data?.length) return;
+    const counts = {};
+    data.forEach(r => { counts[r.following_id] = (counts[r.following_id] || 0) + 1; });
+    const top5 = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,5).map(([id]) => id);
+    const tUsers = allUsers.filter(u => top5.includes(u.id) && !blockedSet.has(u.id));
+    if (!tUsers.length) return;
+    tUsers.sort((a,b) => (counts[b.id]||0) - (counts[a.id]||0));
+
+    document.getElementById("trendingSection").style.display = "block";
+    const list = document.getElementById("trendingList");
+    list.innerHTML = "";
+    tUsers.forEach((u, i) => {
+      const card = document.createElement("div"); card.className = "trending-card";
+      const rank = document.createElement("div"); rank.className = "trending-rank"; rank.textContent = `#${i+1}`;
+      const av = buildAv(u, 44, false); av.style.margin = "0 auto";
+      const nm = document.createElement("div"); nm.className = "tc-name"; nm.textContent = u.full_name || u.username;
+      const fc = document.createElement("div"); fc.className = "tc-followers"; fc.textContent = `${counts[u.id]||0} followers`;
+      card.appendChild(rank); card.appendChild(av); card.appendChild(nm); card.appendChild(fc);
+      card.onclick = () => openSheet(u);
+      list.appendChild(card);
+    });
+  } catch(e) { /* skip silently */ }
+}
+
+function toggleTrending() {
+  trendingCollapsed = !trendingCollapsed;
+  document.getElementById("trendingList").classList.toggle("collapsed", trendingCollapsed);
+  document.getElementById("trendingChevron").textContent = trendingCollapsed ? "▸" : "▾";
+}
+
+// ══════════════════════════════════════════════════════
+// SKELETON
+// ══════════════════════════════════════════════════════
+function showSkeleton() {
+  const el = document.getElementById("userList");
+  el.innerHTML = "";
+  for (let i = 0; i < 6; i++) {
+    el.innerHTML += `<div class="skeleton-card">
+      <div class="sk sk-av"></div>
+      <div class="sk-lines">
+        <div class="sk sk-line" style="width:60%"></div>
+        <div class="sk sk-line" style="width:40%"></div>
+      </div>
+      <div class="sk sk-btn"></div>
+    </div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// MINI PROFILE SHEET
+// ══════════════════════════════════════════════════════
+async function openSheet(u) {
+  sheetUser = u;
+  const isF = followingSet.has(u.id);
+  const isMuted = mutedSet.has(u.id);
+
+  // Hero
+  const sheetAvEl = document.getElementById("sheetAv");
+  sheetAvEl.innerHTML = "";
+  if (u.avatar_url) {
+    const img = document.createElement("img"); img.src = u.avatar_url; img.alt = u.full_name || "";
+    sheetAvEl.appendChild(img);
+  } else {
+    sheetAvEl.style.background = avatarColor(u.full_name);
+    sheetAvEl.textContent = initialsOf(u.full_name);
+  }
+  if (u.is_online) {
+    const dot = document.createElement("div"); dot.className = "online-dot";
+    sheetAvEl.appendChild(dot);
+  }
+
+  const nameEl = document.getElementById("sheetName");
+  nameEl.innerHTML = "";
+  const nameText = document.createTextNode(u.full_name || u.username || "User");
+  nameEl.appendChild(nameText);
+  if (u.verified) {
+    const vi = document.createElement("i"); vi.className = "ph-fill ph-seal-check"; vi.style.cssText = "font-size:20px;color:#60a5fa;";
+    nameEl.appendChild(vi);
+  }
+
+  document.getElementById("sheetUsername").textContent = `@${u.username || "unknown"}`;
+  const statusEl = document.getElementById("sheetStatus");
+  if (u.is_online) { statusEl.textContent = "Online now"; }
+  else if (canShowLastSeen(u, isF) && u.last_seen) { statusEl.textContent = `Last seen ${timeAgo(u.last_seen)}`; }
+  else { statusEl.textContent = ""; }
+
+  document.getElementById("sheetJoined").textContent = joinedLabel(u.created_at);
+
+  // Badges
+  const badgesEl = document.getElementById("sheetBadges"); badgesEl.innerHTML = "";
+  if (isNew(u.created_at)) {
+    const nb = document.createElement("span"); nb.className = "mutuals-pill"; nb.textContent = "🆕 New member";
+    badgesEl.appendChild(nb);
+  }
+
+  // Bio
+  const bioEl = document.getElementById("sheetBio");
+  if (u.bio) { bioEl.textContent = u.bio; bioEl.style.display = "block"; }
+  else { bioEl.style.display = "none"; }
+
+  // Follow btn
+  const sfb = document.getElementById("sheetFollowBtn");
+  sfb.textContent = isF ? "Following" : "Follow";
+  sfb.classList.toggle("following-action", isF);
+
+  // Mute btn
+  document.getElementById("sheetMuteLabel").textContent = isMuted ? "Unmute" : "Mute";
+
+  // Message btn
+  document.getElementById("sheetMsgBtn").onclick = () => { window.location.href = `chats.html?uid=${u.id}`; };
+
+  // Details
+  buildSheetDetails(u, isF);
+
+  // Social
+  buildSheetSocial(u);
+
+  // Stats — spinner then load
+  const statsEl = document.getElementById("sheetStats");
+  statsEl.innerHTML = `
+    <div class="stat-col"><div class="stat-spinner"></div><div class="stat-lbl">Followers</div></div>
+    <div class="stat-col"><div class="stat-spinner"></div><div class="stat-lbl">Following</div></div>
+    <div class="stat-col"><div id="sheetJoined2" class="stat-val">${joinedLabel(u.created_at)}</div><div class="stat-lbl">Joined</div></div>`;
+  fetchSheetStats(u.id);
+  fetchMutuals(u.id);
+  checkChatted(u.id);
+
+  document.getElementById("sheetOverlay").classList.add("open");
+  document.getElementById("profileSheet").classList.add("open");
+}
+
+async function fetchSheetStats(userId) {
+  try {
+    const [{ count: fol }, { count: fing }] = await Promise.all([
+      sb.from("follows").select("*", { count: "exact", head: true }).eq("following_id", userId),
+      sb.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", userId)
+    ]);
+    const st = document.getElementById("sheetStats");
+    const cols = st.querySelectorAll(".stat-col");
+    if (cols[0]) cols[0].innerHTML = `<div class="stat-val">${fol ?? 0}</div><div class="stat-lbl">Followers</div>`;
+    if (cols[1]) cols[1].innerHTML = `<div class="stat-val">${fing ?? 0}</div><div class="stat-lbl">Following</div>`;
+  } catch(e) {}
+}
+
+async function fetchMutuals(userId) {
+  try {
+    if (!myFollowingList.length) return;
+    const { data } = await sb.from("follows").select("follower_id").eq("following_id", userId).in("follower_id", myFollowingList);
+    if (data?.length) {
+      const pill = document.createElement("span"); pill.className = "mutuals-pill";
+      pill.textContent = `${data.length} mutual${data.length !== 1 ? "s" : ""}`;
+      document.getElementById("sheetBadges").appendChild(pill);
+    }
+  } catch(e) {}
+}
+
+async function checkChatted(userId) {
+  try {
+    const { data } = await sb.from("messages").select("id", { count: "exact", head: true })
+      .or(`sender_id.eq.${me.id},receiver_id.eq.${me.id}`)
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      .limit(1);
+    // if any result, show chip
+    if (data !== null) {
+      const chip = document.createElement("span"); chip.className = "chatted-chip";
+      chip.innerHTML = `<i class="ph ph-chat-circle"></i> Chatted before`;
+      document.getElementById("sheetBadges").appendChild(chip);
+    }
+  } catch(e) { /* table may not exist, skip */ }
+}
+
+function buildSheetDetails(u, isFollowing) {
+  const el = document.getElementById("sheetDetails");
+  el.innerHTML = `<div class="detail-section-label">Details</div>`;
+  const priv = u.privacy_settings || {};
+  // Email
+  if (!priv.hide_email) {
+    const row = document.createElement("div"); row.className = "detail-row";
+    row.innerHTML = `<i class="ph ph-at"></i><span>${u.email || "—"}</span>`;
+    el.appendChild(row);
+  }
+  // Location
+  if (u.location) {
+    const row = document.createElement("div"); row.className = "detail-row";
+    row.innerHTML = `<i class="ph ph-map-pin"></i><span>${u.location}</span>`;
+    el.appendChild(row);
+  }
+  // Privacy note
+  const lsPriv = priv.show_last_seen || "everyone";
+  if (lsPriv !== "everyone") {
+    const row = document.createElement("div"); row.className = "detail-row";
+    row.innerHTML = `<i class="ph ph-lock"></i><span>Last seen shown to ${lsPriv} only</span>`;
+    el.appendChild(row);
+  }
+}
+
+function buildSheetSocial(u) {
+  const el = document.getElementById("sheetSocial");
+  el.innerHTML = "";
+  if (!u.social_links || !Object.keys(u.social_links).length) return;
+  const icons = { twitter: "ph-twitter-logo", instagram: "ph-instagram-logo", github: "ph-github-logo", linkedin: "ph-linkedin-logo", website: "ph-globe" };
+  Object.entries(u.social_links).forEach(([platform, val]) => {
+    if (!val) return;
+    const row = document.createElement("div"); row.className = "detail-row";
+    const iconCls = icons[platform.toLowerCase()] || "ph-link";
+    row.innerHTML = `<i class="ph ${iconCls}"></i><span style="color:var(--brand);text-decoration:underline;cursor:pointer;">${val}</span>`;
+    row.querySelector("span").onclick = () => window.open(val.startsWith("http") ? val : `https://${val}`, "_blank");
+    el.appendChild(row);
+  });
+}
+
+function closeSheet() {
+  document.getElementById("sheetOverlay").classList.remove("open");
+  document.getElementById("profileSheet").classList.remove("open");
+  sheetUser = null;
+}
+
+function sheetToggleFollow() {
+  if (!sheetUser) return;
+  toggleFollow(sheetUser.id, true);
+}
+
+// ══════════════════════════════════════════════════════
+// MUTE / BLOCK
+// ══════════════════════════════════════════════════════
+async function sheetToggleMute() {
+  if (!sheetUser) return;
+  const isMuted = mutedSet.has(sheetUser.id);
+  try {
+    if (isMuted) {
+      await sb.from("mutes").delete().eq("user_id", me.id).eq("muted_id", sheetUser.id);
+      mutedSet.delete(sheetUser.id);
+      document.getElementById("sheetMuteLabel").textContent = "Mute";
+      toast(`Unmuted @${sheetUser.username}`, "info");
+    } else {
+      await sb.from("mutes").insert({ user_id: me.id, muted_id: sheetUser.id }).then(() => {});
+      mutedSet.add(sheetUser.id);
+      document.getElementById("sheetMuteLabel").textContent = "Unmute";
+      toast(`Muted @${sheetUser.username}`, "info");
+    }
+    renderList();
+  } catch(e) { toast("Could not update mute — try again", "bad"); }
+}
+
+async function sheetBlock() {
+  if (!sheetUser) return;
+  const u = sheetUser;
+  closeSheet();
+  try {
+    await sb.from("blocks").insert({ user_id: me.id, blocked_id: u.id });
+    blockedSet.add(u.id);
+    toast(`Blocked @${u.username}`, "bad");
+    renderList();
+  } catch(e) { toast("Could not block — try again", "bad"); }
+}
+
+// ══════════════════════════════════════════════════════
+// SHARE PROFILE
+// ══════════════════════════════════════════════════════
+async function shareProfile() {
+  if (!sheetUser) return;
+  const url = `${location.origin}/profile.html?uid=${sheetUser.id}`;
+  const name = sheetUser.full_name || sheetUser.username || "User";
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: name, text: `Check out ${name} on NovaChat`, url });
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast("Profile link copied!", "good");
+    }
+  } catch(e) { /* dismissed */ }
+}
+
+// ══════════════════════════════════════════════════════
+// LOAD DATA
+// ══════════════════════════════════════════════════════
+async function init() {
+  // Session guard
+  const { data: sessionData } = await sb.auth.getSession();
+  if (!sessionData.session) { window.location.href = "index.html"; return; }
+  me = sessionData.session.user;
+
+  showSkeleton();
+
+  try {
+    // Fetch all users (excluding self)
+    const { data: users, error: uErr } = await sb.from("profiles").select("*").neq("id", me.id).order("full_name", { ascending: true });
+    if (uErr) throw uErr;
+    allUsers = users || [];
+
+    // Fetch my follows
+    const { data: fRows } = await sb.from("follows").select("following_id").eq("follower_id", me.id);
+    followingSet = new Set((fRows || []).map(r => r.following_id));
+    myFollowingList = [...followingSet];
+
+    // Fetch who follows me
+    const { data: fmRows } = await sb.from("follows").select("follower_id").eq("following_id", me.id);
+    followersOfMeSet = new Set((fmRows || []).map(r => r.follower_id));
+
+    // Fetch mutes
+    try {
+      const { data: muteRows } = await sb.from("mutes").select("muted_id").eq("user_id", me.id);
+      mutedSet = new Set((muteRows || []).map(r => r.muted_id));
+    } catch(e) {}
+
+    // Fetch blocks
+    try {
+      const { data: blockRows } = await sb.from("blocks").select("blocked_id").eq("user_id", me.id);
+      blockedSet = new Set((blockRows || []).map(r => r.blocked_id));
+    } catch(e) {}
+
+    buildLocationChips();
+    renderList();
+    buildMaybePeople();
+    buildTrending();
+
+  } catch(e) {
+    toast("Failed to load users — " + (e.message || "check connection"), "bad");
+    document.getElementById("userList").innerHTML = `<div class="empty-state"><i class="ph ph-warning-circle"></i><p>Could not load users. Please refresh.</p></div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// DARK MODE DETECTION
+// ══════════════════════════════════════════════════════
+(function() {
+  const saved = localStorage.getItem("theme");
+  if (saved) { document.documentElement.setAttribute("data-theme", saved); return; }
+  if (window.matchMedia?.("(prefers-color-scheme: dark)").matches)
+    document.documentElement.setAttribute("data-theme", "dark");
+})();
+
+// ══════════════════════════════════════════════════════
+// OFFLINE
+// ══════════════════════════════════════════════════════
+window.addEventListener("offline", () => document.getElementById("offlineBanner").classList.add("show"));
+window.addEventListener("online",  () => document.getElementById("offlineBanner").classList.remove("show"));
+if (!navigator.onLine) document.getElementById("offlineBanner").classList.add("show");
+
+// ══════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
