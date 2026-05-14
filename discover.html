@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#1d4ed8" />
+<title>NovaChat — Discover</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='30' r='26' fill='%231d4ed8'/><circle cx='22' cy='30' r='3.2' fill='white'/><circle cx='32' cy='30' r='3.2' fill='white'/><circle cx='42' cy='30' r='3.2' fill='white'/><path d='M26 52 L32 60 L38 52 Z' fill='%231d4ed8'/></svg>" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<style>
+/* ─── DESIGN TOKENS (exactly from profile.html) ─────────────────────── */
+:root{
+  --bg:#c8d9f5;
+  --bg-2:#d4e2f8;
+  --card:#ffffff;
+  --card-2:#f8faff;
+  --ink:#0b1b3a;
+  --ink-soft:#5b6b8c;
+  --muted:#9aa6c2;
+  --line:#dde8f8;
+  --surface:#eaf2ff;
+  --surface-2:#dbe7fb;
+  --surface-border:#c7daf3;
+  --brand:#1d4ed8;
+  --brand-2:#2563eb;
+  --brand-3:#60a5fa;
+  --brand-glow:rgba(29,78,216,.45);
+  --hero:#1d4ed8;
+  --hero-2:#2563eb;
+  --good:#22c55e;
+  --warn:#f59e0b;
+  --bad:#ef4444;
+  --radius:9px;
+  --radius-lg:13px;
+  --shadow-sm:0 8px 24px -6px rgba(15,40,120,.22);
+  --shadow:0 20px 50px -14px rgba(15,40,120,.32);
+  --shadow-lg:0 28px 70px -18px rgba(15,40,120,.40);
+  --transition:.25s cubic-bezier(.4,.0,.2,1);
+  --spring:cubic-bezier(.34,1.4,.64,1);
+  --sheet-bg:#fff;
+}
+
+/* ─── DARK MODE (exactly from profile.html) ─────────────────────────── */
+[data-theme="dark"]{
+  --bg:#0f172a;
+  --bg-2:#111827;
+  --card:#1e293b;
+  --card-2:#1e293b;
+  --ink:#f1f5f9;
+  --ink-soft:#94a3b8;
+  --muted:#64748b;
+  --line:#334155;
+  --surface:#0f172a;
+  --surface-2:#1e293b;
+  --surface-border:#334155;
+  --hero:#1e3a8a;
+  --hero-2:#1d4ed8;
+  --shadow-sm:0 8px 24px -6px rgba(0,0,0,.45);
+  --shadow:0 20px 50px -14px rgba(0,0,0,.55);
+  --shadow-lg:0 28px 70px -18px rgba(0,0,0,.65);
+  --sheet-bg:#1e293b;
+}
+
+/* ─── RESET ─────────────────────────────────────────────────────────── */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  -webkit-user-select:none;-moz-user-select:none;user-select:none;
+  font-family:'Poppins',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(ellipse 110% 60% at 60% 0%, #a8c4f0 0%, transparent 65%),
+    radial-gradient(ellipse 80% 70% at -5% 100%, #9ab8ee 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 100% 60%, #b0ccf5 0%, transparent 55%),
+    var(--bg);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+[data-theme="dark"] body{
+  background:
+    radial-gradient(ellipse 110% 60% at 60% 0%, #0d1f40 0%, transparent 65%),
+    radial-gradient(ellipse 80% 70% at -5% 100%, #091830 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 100% 60%, #0e1d38 0%, transparent 55%),
+    var(--bg);
+}
+body::-webkit-scrollbar{display:none;}
+body{scrollbar-width:none;}
+input,textarea{-webkit-user-select:text;-moz-user-select:text;user-select:text;}
+button{font:inherit;color:inherit;border:0;background:transparent;cursor:pointer;}
+input,select{font:inherit;color:inherit;}
+a{text-decoration:none;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes islandIn{to{opacity:1;transform:translateY(0);}}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.5);opacity:.6;}}
+@keyframes shimmer{0%{background-position:-400px 0;}100%{background-position:400px 0;}}
+
+/* ─── OFFLINE BANNER ─────────────────────────────────────────────────── */
+.offline{
+  position:fixed;top:0;left:0;right:0;
+  background:var(--bad);color:#fff;
+  text-align:center;padding:6px 10px;
+  font-size:13px;font-weight:600;
+  z-index:200;
+  transform:translateY(-100%);
+  transition:transform .3s var(--transition);
+}
+.offline.show{transform:translateY(0);}
+
+/* ─── TOPBAR (identical to profile.html .topbar) ────────────────────── */
+.topbar{
+  position:fixed;
+  top:calc(10px + env(safe-area-inset-top,0px));
+  left:50%;transform:translateX(-50%);
+  width:min(calc(100vw - 24px),416px);
+  height:56px;z-index:80;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 10px 0 14px;
+  border-radius:14px;
+  background:rgba(246,250,255,.93);
+  backdrop-filter:blur(5px) saturate(130%);
+  -webkit-backdrop-filter:blur(5px) saturate(130%);
+  border:1px solid rgba(199,218,243,.7);
+  box-shadow:0 24px 60px -17px rgba(15,40,120,.38);
+}
+[data-theme="dark"] .topbar{
+  background:rgba(30,41,59,.93);
+  border-color:#334155;
+}
+.topbar .title{font-weight:700;font-size:17px;letter-spacing:.2px;color:var(--ink);}
+.topbar-right{display:flex;align-items:center;gap:6px;}
+.people-pill{
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  color:#fff;border-radius:999px;
+  padding:5px 13px;font-size:12px;font-weight:700;
+  box-shadow:0 4px 14px var(--brand-glow);
+}
+.sort-btn{
+  width:38px;height:38px;border-radius:9px;
+  display:grid;place-items:center;
+  color:var(--ink);font-size:20px;
+  background:rgba(219,231,251,.6);
+  border:1px solid rgba(199,218,243,.6);
+  transition:transform var(--transition),background var(--transition);
+  flex-shrink:0;
+}
+.sort-btn:active{transform:scale(.92);}
+[data-theme="dark"] .sort-btn{
+  background:rgba(15,23,42,.6);
+  border-color:#334155;color:#f1f5f9;
+}
+#themeToggle{
+  width:38px;height:38px;border-radius:9px;
+  display:grid;place-items:center;
+  color:var(--ink);font-size:20px;
+  background:rgba(219,231,251,.6);
+  border:1px solid rgba(199,218,243,.6);
+  transition:transform var(--transition),background var(--transition);
+  flex-shrink:0;
+}
+#themeToggle:active{transform:scale(.92);}
+[data-theme="dark"] #themeToggle{background:rgba(15,23,42,.6);border-color:#334155;color:#f1f5f9;}
+@keyframes themeShake{
+  0%{transform:rotate(0);}20%{transform:rotate(-18deg);}
+  40%{transform:rotate(18deg);}60%{transform:rotate(-12deg);}
+  80%{transform:rotate(10deg);}100%{transform:rotate(0);}
+}
+#themeToggle.shaking i{animation:themeShake .4s ease;}
+
+/* ─── SORT DROPDOWN ──────────────────────────────────────────────────── */
+#sortDropdown{
+  position:fixed;z-index:300;
+  background:var(--sheet-bg);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  top:calc(76px + env(safe-area-inset-top,0px));
+  right:calc((100% - min(416px, calc(100% - 24px))) / 2 + 10px);
+  min-width:170px;
+  display:none;opacity:0;
+  transition:opacity .2s ease,transform .2s var(--spring);
+  transform:translateY(-8px) scale(.97);
+}
+#sortDropdown.open{display:block;opacity:1;transform:translateY(0) scale(1);}
+.sort-opt{
+  padding:13px 18px;font-size:14px;font-weight:500;cursor:pointer;
+  color:var(--ink);display:flex;align-items:center;gap:10px;
+  transition:background var(--transition);
+}
+.sort-opt:hover,.sort-opt.active{background:var(--surface);color:var(--brand);}
+.sort-opt+.sort-opt{border-top:1px solid var(--line);}
+.sort-opt .check{margin-left:auto;color:var(--brand);font-size:17px;display:none;}
+.sort-opt.active .check{display:block;}
+
+/* ─── NOTIFICATION POPUP (identical to profile.html) ────────────────── */
+.notif-popup{
+  position:fixed;
+  top:calc(76px + env(safe-area-inset-top,0px));
+  left:50%;transform:translateX(-50%) translateY(-20px);
+  z-index:400;opacity:0;pointer-events:none;
+  transition:opacity .3s ease,transform .4s var(--spring);
+  width:min(calc(100vw - 32px),400px);
+}
+.notif-popup.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+.notif-card{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px;border-radius:18px;
+  background:#fff;border-left:4px solid var(--brand);
+  box-shadow:0 20px 50px -12px rgba(15,40,120,.30),0 4px 16px -4px rgba(0,0,0,.12);
+}
+[data-theme="dark"] .notif-card{background:#1e293b;}
+.notif-card.good{border-left-color:var(--good);}
+.notif-card.bad{border-left-color:var(--bad);}
+.notif-card.info{border-left-color:var(--brand);}
+.notif-icon-wrap{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--surface);display:grid;place-items:center;flex:0 0 38px;
+}
+.notif-card.good .notif-icon-wrap{background:#dcfce7;}
+.notif-card.bad .notif-icon-wrap{background:#fee2e2;}
+.notif-icon-wrap i{font-size:20px;color:var(--brand);}
+.notif-card.good .notif-icon-wrap i{color:var(--good);}
+.notif-card.bad .notif-icon-wrap i{color:var(--bad);}
+.notif-body{flex:1;min-width:0;}
+.notif-title{font-size:14px;font-weight:700;color:var(--ink);line-height:1.3;}
+.notif-msg{font-size:13px;color:var(--ink-soft);margin-top:2px;line-height:1.4;}
+.notif-close{
+  color:var(--muted);font-size:18px;
+  width:28px;height:28px;display:grid;place-items:center;
+  border-radius:50%;flex:0 0 28px;transition:background var(--transition);
+}
+.notif-close:active{background:var(--surface);}
+
+/* ─── MAIN SCROLL AREA ───────────────────────────────────────────────── */
+#mainScroll{
+  padding-top:calc(80px + env(safe-area-inset-top,0px));
+  padding-bottom:calc(100px + env(safe-area-inset-bottom,0px));
+  padding-left:16px;padding-right:16px;
+  max-width:440px;margin:0 auto;
+}
+
+/* ─── SEARCH BAR ─────────────────────────────────────────────────────── */
+.search-wrap{position:relative;margin:14px 0 10px;}
+.search-wrap i{
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  font-size:18px;color:var(--muted);pointer-events:none;
+}
+#searchInput{
+  width:100%;padding:12px 16px 12px 42px;
+  background:rgba(246,250,255,.93);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border:1px solid rgba(199,218,243,.7);
+  border-radius:999px;font-size:14px;font-weight:500;
+  color:var(--ink);font-family:inherit;
+  box-shadow:var(--shadow-sm);
+  outline:none;
+  transition:border-color var(--transition),box-shadow var(--transition);
+}
+[data-theme="dark"] #searchInput{
+  background:rgba(30,41,59,.93);border-color:#334155;
+}
+#searchInput::placeholder{color:var(--muted);}
+#searchInput:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(59,130,246,.15);}
+
+/* ─── FILTER TABS ────────────────────────────────────────────────────── */
+.filter-tabs{display:flex;gap:8px;margin:8px 0 10px;}
+.filter-tab{
+  padding:7px 18px;border-radius:999px;font-size:13px;font-weight:700;
+  border:none;cursor:pointer;font-family:inherit;
+  color:var(--ink-soft);background:transparent;
+  transition:all var(--transition);
+}
+.filter-tab.active{
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  color:#fff;box-shadow:0 4px 14px var(--brand-glow);
+}
+
+/* ─── LOCATION CHIPS ─────────────────────────────────────────────────── */
+#locationChips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.loc-chip{
+  padding:5px 12px;border-radius:999px;font-size:12px;font-weight:600;
+  background:var(--surface);color:var(--ink-soft);
+  border:1px solid var(--surface-border);cursor:pointer;
+  transition:all var(--transition);
+}
+.loc-chip.active{background:var(--brand);color:#fff;border-color:var(--brand);}
+
+/* ─── SECTION LABEL ──────────────────────────────────────────────────── */
+.section-label{
+  font-size:11px;font-weight:700;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--ink-soft);
+  margin:4px 2px 8px;display:block;
+}
+
+/* ─── PEOPLE YOU MAY KNOW (horizontal strip) ─────────────────────────── */
+#maybePeopleWrap{margin-bottom:4px;}
+.horiz-scroll{
+  display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;
+  scrollbar-width:none;
+}
+.horiz-scroll::-webkit-scrollbar{display:none;}
+.maybe-card{
+  flex:0 0 100px;
+  background:var(--card);
+  border:1px solid rgba(199,218,243,.5);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-sm);
+  padding:12px 8px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  cursor:pointer;
+  transition:transform var(--transition),box-shadow var(--transition);
+}
+.maybe-card:active{transform:scale(.96);}
+.maybe-card .m-name{
+  font-size:12px;font-weight:600;color:var(--ink);
+  text-align:center;line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  width:100%;
+}
+.maybe-card .m-follow{
+  padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;
+  border:1.5px solid var(--brand);color:var(--brand);
+  transition:all var(--transition);
+}
+.maybe-card .m-follow.following{
+  background:linear-gradient(135deg,var(--good),#16a34a);
+  border-color:transparent;color:#fff;
+}
+
+/* ─── TRENDING STRIP ─────────────────────────────────────────────────── */
+#trendingWrap{margin-bottom:4px;}
+.trending-card{
+  flex:0 0 90px;
+  background:var(--card);
+  border:1px solid rgba(199,218,243,.5);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-sm);
+  padding:10px 8px 8px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  cursor:pointer;
+  transition:transform var(--transition);
+}
+.trending-card:active{transform:scale(.96);}
+.trending-card .t-name{
+  font-size:11px;font-weight:600;color:var(--ink);
+  text-align:center;line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;
+}
+.trending-card .t-followers{font-size:10px;color:var(--muted);font-weight:500;}
+
+/* ─── AVATAR ─────────────────────────────────────────────────────────── */
+.avatar-wrap{position:relative;flex:0 0 auto;}
+.avatar{
+  border-radius:50%;
+  display:grid;place-items:center;overflow:hidden;
+  font-weight:700;color:var(--brand);
+  border:2px solid rgba(255,255,255,.8);
+  box-shadow:0 4px 12px rgba(15,40,120,.18);
+}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+.avatar-sm{width:48px;height:48px;font-size:16px;}
+.avatar-md{width:60px;height:60px;font-size:20px;}
+.avatar-lg{width:80px;height:80px;font-size:28px;}
+.avatar-xs{width:40px;height:40px;font-size:13px;}
+
+/* Online dot */
+.online-dot{
+  position:absolute;right:0;bottom:0;
+  width:11px;height:11px;border-radius:50%;
+  background:var(--good);border:2px solid var(--card);
+  display:none;
+}
+.online-dot.show{display:block;}
+.online-dot.pulse{animation:pulse 2s ease-in-out infinite;}
+
+/* Profile completion ring */
+.comp-ring{
+  position:absolute;inset:-4px;pointer-events:none;
+}
+.comp-ring circle{
+  fill:none;stroke:var(--brand);stroke-width:2.5;
+  stroke-linecap:round;
+  transform:rotate(-90deg);transform-origin:50% 50%;
+  transition:stroke-dashoffset .5s ease;
+}
+
+/* New badge on avatar */
+.new-badge{
+  position:absolute;top:-4px;right:-4px;
+  background:var(--warn);color:#fff;
+  font-size:8px;font-weight:800;letter-spacing:.5px;
+  border-radius:999px;padding:1px 5px;
+  border:1.5px solid var(--card);
+  text-transform:uppercase;
+}
+
+/* ─── USER LIST CARDS (island style from profile.html) ───────────────── */
+.user-card{
+  background:var(--card);
+  border:1px solid rgba(199,218,243,.5);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  padding:13px 14px;
+  margin-bottom:10px;
+  display:flex;align-items:center;gap:12px;
+  cursor:pointer;
+  opacity:0;transform:translateY(14px);
+  animation:islandIn .45s var(--spring) forwards;
+  transition:transform var(--transition),box-shadow var(--transition);
+}
+.user-card:active{transform:scale(.98);}
+[data-theme="dark"] .user-card{background:var(--card);border-color:var(--surface-border);}
+.user-card .card-body{flex:1;min-width:0;}
+.user-card .u-name{
+  font-size:15px;font-weight:700;color:var(--ink);
+  display:flex;align-items:center;gap:5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.user-card .u-handle{font-size:12px;color:var(--muted);margin-top:1px;}
+.user-card .u-status{font-size:12px;margin-top:2px;}
+.u-status.online{color:var(--good);font-weight:600;}
+.u-status.offline{color:var(--muted);}
+
+/* Badges on user card */
+.follows-you-pill{
+  display:inline-flex;align-items:center;
+  font-size:10px;font-weight:700;letter-spacing:.3px;
+  background:var(--surface-2);color:var(--brand);
+  border:1px solid var(--surface-border);
+  border-radius:999px;padding:2px 7px;
+  margin-left:4px;white-space:nowrap;flex-shrink:0;
+}
+.muted-icon{color:var(--muted);font-size:14px;flex-shrink:0;}
+.verified-icon{color:var(--brand);font-size:14px;flex-shrink:0;}
+
+/* Follow button */
+.follow-btn{
+  flex:0 0 auto;padding:7px 14px;border-radius:999px;
+  font-size:12px;font-weight:700;font-family:inherit;
+  border:1.5px solid var(--brand);color:var(--brand);
+  background:transparent;
+  transition:all var(--transition);white-space:nowrap;
+}
+.follow-btn.following{
+  background:linear-gradient(135deg,var(--good),#16a34a);
+  border-color:transparent;color:#fff;
+  box-shadow:0 4px 12px rgba(34,197,94,.35);
+}
+.follow-btn:active{transform:scale(.95);}
+
+/* ─── SKELETON ────────────────────────────────────────────────────────── */
+.skeleton-card{
+  background:var(--card);
+  border:1px solid rgba(199,218,243,.5);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-sm);
+  padding:13px 14px;margin-bottom:10px;
+  display:flex;align-items:center;gap:12px;
+}
+.skel{
+  border-radius:999px;overflow:hidden;
+  background:linear-gradient(90deg,var(--line) 25%,var(--surface) 50%,var(--line) 75%);
+  background-size:800px 100%;
+  animation:shimmer 1.4s infinite linear;
+}
+.skel-circle{border-radius:50%;flex:0 0 auto;}
+.skel-body{flex:1;display:flex;flex-direction:column;gap:7px;}
+.skel-btn{flex:0 0 70px;height:30px;border-radius:999px;overflow:hidden;
+  background:linear-gradient(90deg,var(--line) 25%,var(--surface) 50%,var(--line) 75%);
+  background-size:800px 100%;animation:shimmer 1.4s infinite linear;}
+
+/* ─── EMPTY STATE ─────────────────────────────────────────────────────── */
+.empty-state{
+  text-align:center;padding:48px 20px;color:var(--ink-soft);
+}
+.empty-state i{font-size:52px;color:var(--line);display:block;margin-bottom:14px;}
+.empty-state p{font-size:14px;line-height:1.6;margin:0;color:var(--ink-soft);}
+
+/* ─── BOTTOM TABBAR (identical to profile.html) ─────────────────────── */
+.tabbar{
+  position:fixed;
+  bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  left:50%;transform:translateX(-50%);
+  width:min(calc(100vw - 24px),416px);
+  height:62px;
+  background:rgba(246,250,255,.93);
+  backdrop-filter:blur(5px) saturate(130%);
+  -webkit-backdrop-filter:blur(5px) saturate(130%);
+  border:1px solid rgba(199,218,243,.8);
+  border-radius:13px;
+  box-shadow:0 24px 60px -17px rgba(15,40,120,.38);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 6px;z-index:80;
+}
+[data-theme="dark"] .tabbar{background:rgba(30,41,59,.93);border-color:#334155;}
+.tab-btn{
+  position:relative;flex:1;height:100%;border-radius:9px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;color:var(--ink-soft);font-size:11px;font-weight:600;
+  text-decoration:none;transition:color var(--transition);
+}
+[data-theme="dark"] .tab-btn{color:#64748b;}
+.tab-btn i{font-size:22px;transition:transform var(--transition);z-index:2;position:relative;}
+.tab-btn span{z-index:2;position:relative;}
+.tab-btn::before{
+  content:"";position:absolute;inset:0;border-radius:9px;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  box-shadow:0 8px 20px -8px var(--brand-glow);
+  opacity:0;transform:scale(.85);
+  transition:opacity .25s var(--transition),transform .35s var(--spring);
+  z-index:1;
+}
+.tab-btn.active{color:#fff;}
+[data-theme="dark"] .tab-btn.active{color:#fff;}
+.tab-btn.active::before{opacity:1;transform:scale(1);}
+.tab-btn.active i{transform:scale(1.05);}
+
+/* ─── MINI PROFILE BOTTOM SHEET ──────────────────────────────────────── */
+#sheetOverlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(11,27,58,.55);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  opacity:0;pointer-events:none;
+  transition:opacity .3s ease;
+}
+#sheetOverlay.open{opacity:1;pointer-events:auto;}
+
+#profileSheet{
+  position:fixed;bottom:0;left:50%;
+  transform:translateX(-50%) translateY(105%);
+  width:min(100vw,480px);
+  background:var(--sheet-bg);
+  border-radius:28px 28px 0 0;
+  max-height:88vh;overflow-y:auto;
+  box-shadow:0 -20px 60px -16px rgba(15,40,120,.45);
+  transition:transform .4s var(--spring);
+  z-index:201;
+  scrollbar-width:none;
+}
+#profileSheet::-webkit-scrollbar{display:none;}
+#profileSheet.open{transform:translateX(-50%) translateY(0);}
+.sheet-handle{
+  width:36px;height:4px;border-radius:999px;
+  background:var(--line);margin:12px auto 0;
+}
+
+/* Sheet hero (identity card style) */
+.sheet-hero{
+  background:linear-gradient(160deg,var(--hero) 0%,var(--hero-2) 60%,#1e40af 100%);
+  padding:20px 20px 18px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  position:relative;overflow:hidden;
+}
+.sheet-hero::before{
+  content:"";position:absolute;top:-60px;right:-60px;
+  width:180px;height:180px;border-radius:50%;
+  background:rgba(255,255,255,.06);pointer-events:none;
+}
+.sheet-hero::after{
+  content:"";position:absolute;bottom:-70px;left:-40px;
+  width:200px;height:200px;border-radius:50%;
+  background:rgba(255,255,255,.04);pointer-events:none;
+}
+.sheet-hero .s-name{
+  font-size:22px;font-weight:700;color:#fff;text-align:center;line-height:1.2;
+  display:flex;align-items:center;gap:6px;
+}
+.sheet-hero .s-handle{font-size:14px;color:rgba(255,255,255,.7);text-align:center;}
+.sheet-hero .s-status{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;text-align:center;}
+.sheet-hero .s-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:4px;}
+.mutuals-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:700;
+  background:rgba(255,255,255,.18);color:rgba(255,255,255,.9);
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:999px;padding:3px 9px;
+}
+.chatted-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:700;
+  background:rgba(255,255,255,.18);color:rgba(255,255,255,.9);
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:999px;padding:3px 9px;
+}
+.sheet-avatar-wrap{position:relative;}
+.sheet-online-dot{
+  position:absolute;right:2px;bottom:2px;
+  width:16px;height:16px;border-radius:50%;
+  background:var(--good);border:3px solid var(--hero);
+  display:none;
+}
+.sheet-online-dot.show{display:block;}
+.sheet-online-dot.pulse{animation:pulse 2s ease-in-out infinite;}
+
+/* Stats row */
+.sheet-stats{
+  display:flex;border-bottom:1px solid var(--line);
+}
+.stat-col{
+  flex:1;padding:16px 10px;text-align:center;
+}
+.stat-col+.stat-col{border-left:1px solid var(--line);}
+.stat-val{font-size:18px;font-weight:700;color:var(--ink);}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:2px;font-weight:500;}
+
+/* Sheet loading spinner */
+.stat-spin{
+  display:inline-block;width:18px;height:18px;border-radius:50%;
+  border:2px solid var(--line);border-top-color:var(--brand);
+  animation:spin .7s linear infinite;
+}
+
+/* Bio */
+.sheet-bio{
+  padding:14px 20px;font-size:14px;color:var(--ink-soft);
+  line-height:1.6;border-bottom:1px solid var(--line);
+}
+
+/* Action buttons */
+.sheet-actions{
+  display:flex;gap:10px;padding:16px 20px;
+  border-bottom:1px solid var(--line);
+}
+.sheet-msg-btn{
+  flex:1;height:44px;border-radius:12px;
+  border:1.5px solid var(--brand);color:var(--brand);
+  background:transparent;font-size:14px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  font-family:inherit;transition:all var(--transition);
+}
+.sheet-msg-btn:active{transform:scale(.97);background:var(--surface);}
+.sheet-follow-btn{
+  flex:1;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  color:#fff;font-size:14px;font-weight:700;
+  border:none;display:flex;align-items:center;justify-content:center;gap:7px;
+  font-family:inherit;
+  box-shadow:0 8px 20px -8px var(--brand-glow);
+  transition:all var(--transition);
+}
+.sheet-follow-btn.following{
+  background:linear-gradient(135deg,var(--good),#16a34a);
+  box-shadow:0 8px 20px -8px rgba(34,197,94,.4);
+}
+.sheet-follow-btn:active{transform:scale(.97);}
+.sheet-share-btn{
+  width:44px;height:44px;border-radius:12px;flex:0 0 44px;
+  border:1.5px solid var(--surface-border);background:var(--surface);
+  color:var(--ink-soft);font-size:20px;
+  display:grid;place-items:center;
+  transition:all var(--transition);
+}
+.sheet-share-btn:active{transform:scale(.95);background:var(--surface-2);}
+
+/* Details section */
+.sheet-details{padding:14px 20px 4px;}
+.detail-section-label{
+  font-size:11px;font-weight:700;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--ink-soft);
+  margin-bottom:10px;
+}
+.detail-row{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 0;border-bottom:1px solid var(--line);
+  font-size:13px;color:var(--ink-soft);
+}
+.detail-row:last-child{border-bottom:0;}
+.detail-row i{font-size:17px;color:var(--muted);flex:0 0 20px;}
+
+/* Mute/Block row */
+.sheet-moderation{
+  display:flex;gap:0;padding:4px 20px 20px;
+}
+.sheet-mod-btn{
+  font-size:13px;font-weight:600;color:var(--muted);
+  padding:8px 12px;border-radius:8px;
+  transition:all var(--transition);
+}
+.sheet-mod-btn:active{background:var(--surface);}
+.sheet-mod-btn.block{color:var(--bad);}
+
+/* ─── BOTTOM TAB BAR ─────────────────────────────────────────────────── */
+.tabbar{
+  position:fixed;
+  bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  left:50%;transform:translateX(-50%);
+  width:min(calc(100vw - 24px),416px);
+  height:62px;
+  background:rgba(246,250,255,.93);
+  backdrop-filter:blur(5px) saturate(130%);
+  -webkit-backdrop-filter:blur(5px) saturate(130%);
+  border:1px solid rgba(199,218,243,.8);
+  border-radius:13px;
+  box-shadow:0 24px 60px -17px rgba(15,40,120,.38);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 6px;z-index:80;
+}
+[data-theme="dark"] .tabbar{background:rgba(30,41,59,.93);border-color:#334155;}
+.tab-btn{
+  position:relative;flex:1;height:100%;border-radius:9px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;color:var(--ink-soft);font-size:11px;font-weight:600;
+  text-decoration:none;border:none;background:transparent;cursor:pointer;
+  transition:color var(--transition);font-family:inherit;
+}
+.tab-btn i{font-size:22px;transition:transform var(--transition);z-index:2;position:relative;}
+.tab-btn span{z-index:2;position:relative;}
+.tab-btn::before{
+  content:"";position:absolute;inset:0;
+  border-radius:9px;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  box-shadow:0 8px 20px -8px var(--brand-glow);
+  opacity:0;transform:scale(.85);
+  transition:opacity .25s var(--transition),transform .35s var(--spring);z-index:1;
+}
+.tab-btn.active{color:#fff;}
+.tab-btn.active::before{opacity:1;transform:scale(1);}
+.tab-btn.active i{transform:scale(1.05);}
+
+/* ─── LOADER OVERLAY ─────────────────────────────────────────────────── */
+#pageLoader{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(200,217,245,.75);
+  backdrop-filter:blur(12px);
+  display:grid;place-items:center;
+  transition:opacity .3s ease;
+}
+[data-theme="dark"] #pageLoader{background:rgba(15,23,42,.8);}
+#pageLoader.hide{opacity:0;pointer-events:none;}
+#pageLoader .spin{
+  width:42px;height:42px;border-radius:50%;
+  border:3px solid rgba(29,78,216,.2);border-top-color:var(--brand);
+  animation:spin .9s linear infinite;
+}
+</style>
+</head>
+<body>
+
+<!-- OFFLINE BANNER -->
+<div class="offline" id="offline">⚠️ You are offline. Reconnecting…</div>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="title">Discover</div>
+  <div class="topbar-right">
+    <div class="people-pill" id="peoplePill">— people</div>
+    <button class="sort-btn" id="sortBtn" aria-label="Sort"><i class="ph ph-sort-descending"></i></button>
+    <button id="themeToggle" aria-label="Toggle dark mode"><i class="ph ph-moon" id="themeIcon"></i></button>
+  </div>
+</header>
+
+<!-- SORT DROPDOWN -->
+<div id="sortDropdown">
+  <div class="sort-opt active" data-sort="az"><i class="ph ph-sort-ascending"></i>A – Z<i class="ph ph-check check"></i></div>
+  <div class="sort-opt" data-sort="online"><i class="ph ph-wifi-high"></i>Online first<i class="ph ph-check check"></i></div>
+  <div class="sort-opt" data-sort="newest"><i class="ph ph-clock-clockwise"></i>Newest<i class="ph ph-check check"></i></div>
+</div>
+
+<!-- NOTIFICATION POPUP -->
+<div class="notif-popup" id="notifPopup">
+  <div class="notif-card" id="notifCard">
+    <div class="notif-icon-wrap"><i class="ph ph-info" id="notifIcon"></i></div>
+    <div class="notif-body">
+      <div class="notif-title" id="notifTitle">Info</div>
+      <div class="notif-msg" id="notifMsg"></div>
+    </div>
+    <button class="notif-close" id="notifClose"><i class="ph ph-x"></i></button>
+  </div>
+</div>
+
+<!-- MAIN SCROLL -->
+<div id="mainScroll">
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <i class="ph ph-magnifying-glass"></i>
+    <input type="search" id="searchInput" placeholder="Search by name or username…" autocomplete="off" />
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="filter-tabs">
+    <button class="filter-tab active" data-tab="all">All</button>
+    <button class="filter-tab" data-tab="online">Online</button>
+    <button class="filter-tab" data-tab="following">Following</button>
+  </div>
+
+  <!-- Location chips -->
+  <div id="locationChips"></div>
+
+  <!-- People you may know -->
+  <div id="maybePeopleWrap" style="display:none;">
+    <span class="section-label">People you may know</span>
+    <div class="horiz-scroll" id="maybePeopleList"></div>
+  </div>
+
+  <!-- Trending -->
+  <div id="trendingWrap" style="display:none;margin-top:8px;">
+    <span class="section-label">Trending this week 🔥</span>
+    <div class="horiz-scroll" id="trendingList"></div>
+  </div>
+
+  <!-- User list -->
+  <div id="userList"></div>
+
+</div>
+
+<!-- BOTTOM TAB BAR -->
+<nav class="tabbar">
+  <a class="tab-btn" href="chats.html"><i class="ph ph-chats"></i><span>Chats</span></a>
+  <a class="tab-btn active" href="discover.html"><i class="ph-fill ph-compass"></i><span>Discover</span></a>
+  <a class="tab-btn" href="notifications.html"><i class="ph ph-bell"></i><span>Alerts</span></a>
+  <a class="tab-btn" href="profile.html"><i class="ph ph-user-circle"></i><span>Profile</span></a>
+</nav>
+
+<!-- PAGE LOADER -->
+<div id="pageLoader"><div class="spin"></div></div>
+
+<!-- MINI PROFILE SHEET -->
+<div id="sheetOverlay"></div>
+<div id="profileSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hero" id="sheetHero">
+    <div class="sheet-avatar-wrap">
+      <div class="avatar avatar-lg" id="sheetAvatar"></div>
+      <div class="sheet-online-dot" id="sheetOnlineDot"></div>
+    </div>
+    <div class="s-name" id="sheetName">—</div>
+    <div class="s-handle" id="sheetHandle">@—</div>
+    <div class="s-status" id="sheetStatus"></div>
+    <div class="s-badges" id="sheetBadges"></div>
+  </div>
+  <div class="sheet-stats" id="sheetStats">
+    <div class="stat-col"><div class="stat-val"><span class="stat-spin"></span></div><div class="stat-lbl">Followers</div></div>
+    <div class="stat-col"><div class="stat-val"><span class="stat-spin"></span></div><div class="stat-lbl">Following</div></div>
+    <div class="stat-col" id="sheetJoinedCol"><div class="stat-val">—</div><div class="stat-lbl">Joined</div></div>
+  </div>
+  <div class="sheet-bio" id="sheetBio" style="display:none;"></div>
+  <div class="sheet-actions">
+    <button class="sheet-msg-btn" id="sheetMsgBtn"><i class="ph ph-chat-circle"></i> Message</button>
+    <button class="sheet-follow-btn" id="sheetFollowBtn"><i class="ph ph-user-plus"></i> Follow</button>
+    <button class="sheet-share-btn" id="sheetShareBtn" title="Share profile"><i class="ph ph-share-network"></i></button>
+  </div>
+  <div class="sheet-details" id="sheetDetails"></div>
+  <div id="sheetSocial"></div>
+  <div class="sheet-moderation">
+    <button class="sheet-mod-btn" id="sheetMuteBtn"><i class="ph ph-speaker-slash"></i> <span id="sheetMuteLabel">Mute</span></button>
+    <button class="sheet-mod-btn block" id="sheetBlockBtn"><i class="ph ph-prohibit"></i> Block</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// SUPABASE INIT
+// ══════════════════════════════════════════════════════════
+const SUPA_URL = "https://akmwzymifytmuinbyeif.supabase.co";
+const SUPA_KEY = "sb_publishable_QhVT2UQmI0_ZNg47vcs0eg_-jt4hP_A";
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let me = null;
+let allUsers = [];
+let followingSet = new Set();
+let followersOfMeSet = new Set();
+let myFollowingList = [];
+let mutedSet = new Set();
+let blockedSet = new Set();
+let activeTab = "all";
+let activeSort = "az";
+let activeLocation = null;
+let searchQ = "";
+let sheetUser = null;
+let notifTimer = null;
+
+// ══════════════════════════════════════════════════════════
+// TOAST (profile.html style card popup)
+// ══════════════════════════════════════════════════════════
+function toast(title, type = "info", msg = "") {
+  const popup   = document.getElementById("notifPopup");
+  const card    = document.getElementById("notifCard");
+  const icon    = document.getElementById("notifIcon");
+  const titleEl = document.getElementById("notifTitle");
+  const msgEl   = document.getElementById("notifMsg");
+
+  card.className = "notif-card " + type;
+  const icons = { good:"ph-check-circle", bad:"ph-warning-circle", info:"ph-info" };
+  icon.className = "ph " + (icons[type] || "ph-info");
+  titleEl.textContent = title;
+  msgEl.textContent = msg;
+  msgEl.style.display = msg ? "block" : "none";
+
+  popup.classList.add("show");
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => popup.classList.remove("show"), 3000);
+}
+
+document.getElementById("notifClose").addEventListener("click", () => {
+  document.getElementById("notifPopup").classList.remove("show");
+  clearTimeout(notifTimer);
+});
+
+// ══════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════
+function initialsOf(name) {
+  const parts = (name || "?").trim().split(" ");
+  return (parts[0][0] + (parts[1]?.[0] || "")).toUpperCase();
+}
+
+function avatarColor(name) {
+  const colors = [
+    "#dbeafe","#ede9fe","#dcfce7","#fef9c3",
+    "#fee2e2","#ffedd5","#e0f2fe","#fce7f3"
+  ];
+  let hash = 0;
+  for (const c of (name || "")) hash = (hash * 31 + c.charCodeAt(0)) & 0xffff;
+  return colors[hash % colors.length];
+}
+
+function timeAgo(isoString) {
+  if (!isoString) return "";
+  const diff  = Date.now() - new Date(isoString).getTime();
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days  = Math.floor(diff / 86400000);
+  if (mins  < 2)   return "just now";
+  if (mins  < 60)  return `${mins}m ago`;
+  if (hours < 24)  return `${hours}h ago`;
+  if (days  === 1) return "yesterday";
+  return `${days}d ago`;
+}
+
+function joinedLabel(isoString) {
+  if (!isoString) return "—";
+  const d = new Date(isoString);
+  return d.toLocaleDateString("en", { month: "short", year: "numeric" });
+}
+
+function isNewUser(isoString) {
+  if (!isoString) return false;
+  return (Date.now() - new Date(isoString).getTime()) < 7 * 24 * 3600000;
+}
+
+function completionPct(u) {
+  const fields = [u.full_name, u.username, u.bio, u.avatar_url, u.phone_number,
+    u.social_links && Object.values(u.social_links).some(v => v)];
+  return Math.round(fields.filter(Boolean).length / 6 * 100);
+}
+
+function renderAvatar(el, u, size) {
+  el.style.width = size + "px";
+  el.style.height = size + "px";
+  el.style.fontSize = Math.round(size * .35) + "px";
+  if (u.avatar_url) {
+    el.innerHTML = `<img src="${u.avatar_url}" alt="" loading="lazy" />`;
+    el.style.background = "";
+  } else {
+    const color = avatarColor(u.full_name || u.username || "");
+    el.style.background = color;
+    el.innerHTML = `<span style="color:var(--brand);font-weight:700;">${initialsOf(u.full_name || u.username)}</span>`;
+  }
+}
+
+function statusText(u) {
+  if (u.is_online) return { text: "Online now", cls: "online" };
+  const priv = u.privacy_settings || {};
+  const lsp = priv.show_last_seen || "everyone";
+  if (lsp === "nobody") return { text: "", cls: "offline" };
+  if (lsp === "followers" && !followingSet.has(u.id)) return { text: "", cls: "offline" };
+  return { text: u.last_seen ? "Last seen " + timeAgo(u.last_seen) : "", cls: "offline" };
+}
+
+// ══════════════════════════════════════════════════════════
+// SKELETON
+// ══════════════════════════════════════════════════════════
+function showSkeleton() {
+  const list = document.getElementById("userList");
+  list.innerHTML = Array(6).fill(0).map(() => `
+    <div class="skeleton-card">
+      <div class="skel skel-circle" style="width:48px;height:48px;"></div>
+      <div class="skel-body">
+        <div class="skel" style="height:14px;width:60%;"></div>
+        <div class="skel" style="height:11px;width:40%;"></div>
+      </div>
+      <div class="skel-btn"></div>
+    </div>
+  `).join("");
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER USER LIST
+// ══════════════════════════════════════════════════════════
+function getFiltered() {
+  let list = allUsers.filter(u => !blockedSet.has(u.id));
+
+  // Tab filter
+  if (activeTab === "online")    list = list.filter(u => u.is_online);
+  if (activeTab === "following") list = list.filter(u => followingSet.has(u.id));
+
+  // Search filter
+  if (searchQ) {
+    const q = searchQ.toLowerCase();
+    list = list.filter(u =>
+      (u.full_name || "").toLowerCase().includes(q) ||
+      (u.username  || "").toLowerCase().includes(q)
+    );
+  }
+
+  // Location filter
+  if (activeLocation) {
+    list = list.filter(u => (u.location || "").toLowerCase().includes(activeLocation.toLowerCase()));
+  }
+
+  // Sort
+  if (activeSort === "az") {
+    list.sort((a, b) => (a.full_name || a.username || "").localeCompare(b.full_name || b.username || ""));
+  } else if (activeSort === "online") {
+    list.sort((a, b) => (b.is_online ? 1 : 0) - (a.is_online ? 1 : 0));
+  } else if (activeSort === "newest") {
+    list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+
+  return list;
+}
+
+function renderList() {
+  const list = document.getElementById("userList");
+  const filtered = getFiltered();
+
+  // People pill count
+  document.getElementById("peoplePill").textContent =
+    allUsers.length + (allUsers.length === 1 ? " person" : " people");
+
+  if (filtered.length === 0) {
+    const msgs = {
+      all:       searchQ ? `No results for "${searchQ}"` : "No one here yet — invite friends to join NovaChat!",
+      online:    "Nobody is online right now.",
+      following: "You're not following anyone yet. Discover people above."
+    };
+    list.innerHTML = `<div class="empty-state">
+      <i class="ph ph-users-three"></i>
+      <p>${msgs[activeTab] || msgs.all}</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = "";
+  filtered.forEach((u, i) => {
+    const isFollowing = followingSet.has(u.id);
+    const followsMe   = followersOfMeSet.has(u.id);
+    const isMuted     = mutedSet.has(u.id);
+    const isNew       = isNewUser(u.created_at);
+    const pct         = completionPct(u);
+    const st          = statusText(u);
+
+    const card = document.createElement("div");
+    card.className = "user-card";
+    card.style.animationDelay = Math.min(i * 0.04, 0.4) + "s";
+
+    // Avatar with completion ring
+    const ringR = 28; const circ = 2 * Math.PI * ringR;
+    const offset = circ - (pct / 100 * circ);
+    const showRing = pct < 100;
+
+    card.innerHTML = `
+      <div class="avatar-wrap">
+        ${showRing ? `<svg class="comp-ring" viewBox="0 0 72 72" style="width:56px;height:56px;position:absolute;top:-4px;left:-4px;">
+          <circle cx="36" cy="36" r="${ringR}" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"></circle>
+        </svg>` : ""}
+        <div class="avatar avatar-sm" id="card-av-${u.id}"></div>
+        <div class="online-dot ${u.is_online ? "show pulse" : ""}"></div>
+        ${isNew ? `<span class="new-badge">New</span>` : ""}
+      </div>
+      <div class="card-body">
+        <div class="u-name">
+          ${u.full_name || u.username || "Unknown"}
+          ${u.verified ? `<i class="ph-fill ph-seal-check verified-icon" title="Verified"></i>` : ""}
+          ${isMuted ? `<i class="ph ph-speaker-slash muted-icon" title="Muted"></i>` : ""}
+          ${followsMe ? `<span class="follows-you-pill">Follows you</span>` : ""}
+        </div>
+        <div class="u-handle">@${u.username || "—"}</div>
+        ${st.text ? `<div class="u-status ${st.cls}">${st.cls === "online" ? "🟢 " : ""}${st.text}</div>` : ""}
+      </div>
+      <button class="follow-btn ${isFollowing ? "following" : ""}"
+        data-uid="${u.id}">
+        ${isFollowing ? "Following" : "Follow"}
+      </button>
+    `;
+
+    // Render avatar
+    const avEl = card.querySelector(`#card-av-${u.id}`);
+    if (avEl) renderAvatar(avEl, u, 48);
+
+    // Follow button — stop propagation
+    card.querySelector(".follow-btn").addEventListener("click", e => {
+      e.stopPropagation();
+      toggleFollow(u.id);
+    });
+
+    // Card click → open sheet
+    card.addEventListener("click", () => openSheet(u));
+
+    list.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// FOLLOW / UNFOLLOW
+// ══════════════════════════════════════════════════════════
+async function toggleFollow(uid, fromSheet = false) {
+  const isFollowing = followingSet.has(uid);
+  const u = allUsers.find(x => x.id === uid);
+  const handle = u ? "@" + (u.username || "user") : "user";
+
+  // Optimistic UI
+  if (isFollowing) {
+    followingSet.delete(uid);
+    myFollowingList = [...followingSet];
+  } else {
+    followingSet.add(uid);
+    myFollowingList = [...followingSet];
+  }
+  renderList();
+
+  // Sync sheet button if open
+  if (sheetUser?.id === uid) updateSheetFollowBtn();
+
+  try {
+    if (isFollowing) {
+      await sb.from("follows").delete()
+        .eq("follower_id", me.id)
+        .eq("following_id", uid);
+      toast("Unfollowed " + handle, "info");
+    } else {
+      await sb.from("follows").insert({ follower_id: me.id, following_id: uid });
+      toast("Following " + handle, "good");
+    }
+  } catch(e) {
+    // Revert
+    if (isFollowing) followingSet.add(uid);
+    else followingSet.delete(uid);
+    myFollowingList = [...followingSet];
+    renderList();
+    if (sheetUser?.id === uid) updateSheetFollowBtn();
+    toast("Failed to update follow", "bad", e.message || "Try again");
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// MINI PROFILE SHEET
+// ══════════════════════════════════════════════════════════
+function updateSheetFollowBtn() {
+  if (!sheetUser) return;
+  const isF = followingSet.has(sheetUser.id);
+  const btn = document.getElementById("sheetFollowBtn");
+  btn.className = "sheet-follow-btn" + (isF ? " following" : "");
+  btn.innerHTML = isF
+    ? `<i class="ph ph-check"></i> Following`
+    : `<i class="ph ph-user-plus"></i> Follow`;
+}
+
+async function openSheet(u) {
+  sheetUser = u;
+  const isF = followingSet.has(u.id);
+  const isMuted = mutedSet.has(u.id);
+
+  // Hero
+  const avEl = document.getElementById("sheetAvatar");
+  renderAvatar(avEl, u, 80);
+
+  const odot = document.getElementById("sheetOnlineDot");
+  odot.className = "sheet-online-dot" + (u.is_online ? " show pulse" : "");
+
+  document.getElementById("sheetName").innerHTML =
+    (u.full_name || u.username || "Unknown") +
+    (u.verified ? ` <i class="ph-fill ph-seal-check" style="color:rgba(255,255,255,.9);font-size:18px;"></i>` : "");
+  document.getElementById("sheetHandle").textContent = "@" + (u.username || "—");
+
+  const st = statusText(u);
+  document.getElementById("sheetStatus").textContent = st.text;
+
+  // Badges (clear first, then async-fill)
+  const badgesEl = document.getElementById("sheetBadges");
+  badgesEl.innerHTML = "";
+  if (followersOfMeSet.has(u.id)) {
+    const p = document.createElement("span");
+    p.className = "follows-you-pill";
+    p.style.cssText = "background:rgba(255,255,255,.18);color:rgba(255,255,255,.9);border-color:rgba(255,255,255,.25);";
+    p.textContent = "Follows you";
+    badgesEl.appendChild(p);
+  }
+
+  // Stats — show spinners first
+  const statsEl = document.getElementById("sheetStats");
+  statsEl.querySelectorAll(".stat-col").forEach((col, i) => {
+    if (i < 2) col.querySelector(".stat-val").innerHTML = `<span class="stat-spin"></span>`;
+  });
+
+  // Joined
+  const joined = u.created_at ? joinedLabel(u.created_at) : "—";
+  document.getElementById("sheetJoinedCol").innerHTML =
+    `<div class="stat-val">${joined}</div><div class="stat-lbl">Joined</div>`;
+
+  // Bio
+  const bioEl = document.getElementById("sheetBio");
+  if (u.bio) {
+    bioEl.textContent = u.bio;
+    bioEl.style.display = "block";
+  } else {
+    bioEl.style.display = "none";
+  }
+
+  // Follow button
+  updateSheetFollowBtn();
+
+  // Mute label
+  document.getElementById("sheetMuteLabel").textContent = isMuted ? "Unmute" : "Mute";
+
+  // Details
+  buildSheetDetails(u, isF);
+
+  // Social
+  buildSheetSocial(u);
+
+  // Show
+  document.getElementById("sheetOverlay").classList.add("open");
+  document.getElementById("profileSheet").classList.add("open");
+
+  // Async: fetch counts + mutuals + chatted
+  fetchSheetStats(u.id);
+  fetchMutuals(u.id);
+  checkChatted(u.id);
+}
+
+async function fetchSheetStats(uid) {
+  try {
+    const [{ count: fol }, { count: fing }] = await Promise.all([
+      sb.from("follows").select("*", { count:"exact", head:true }).eq("following_id", uid),
+      sb.from("follows").select("*", { count:"exact", head:true }).eq("follower_id", uid)
+    ]);
+    const cols = document.getElementById("sheetStats").querySelectorAll(".stat-col");
+    if (cols[0]) cols[0].innerHTML = `<div class="stat-val">${fol ?? 0}</div><div class="stat-lbl">Followers</div>`;
+    if (cols[1]) cols[1].innerHTML = `<div class="stat-val">${fing ?? 0}</div><div class="stat-lbl">Following</div>`;
+  } catch(e) {}
+}
+
+async function fetchMutuals(uid) {
+  try {
+    if (!myFollowingList.length) return;
+    const { data } = await sb.from("follows")
+      .select("follower_id")
+      .eq("following_id", uid)
+      .in("follower_id", myFollowingList);
+    if (data?.length) {
+      const pill = document.createElement("span");
+      pill.className = "mutuals-pill";
+      pill.innerHTML = `<i class="ph ph-users" style="font-size:11px;"></i> ${data.length} mutual${data.length !== 1 ? "s" : ""}`;
+      document.getElementById("sheetBadges").appendChild(pill);
+    }
+  } catch(e) {}
+}
+
+async function checkChatted(uid) {
+  try {
+    const { data } = await sb.from("messages")
+      .select("id")
+      .or(`and(sender_id.eq.${me.id},receiver_id.eq.${uid}),and(sender_id.eq.${uid},receiver_id.eq.${me.id})`)
+      .limit(1);
+    if (data?.length) {
+      const chip = document.createElement("span");
+      chip.className = "chatted-chip";
+      chip.innerHTML = `<i class="ph ph-chat-circle" style="font-size:11px;"></i> Chatted before`;
+      document.getElementById("sheetBadges").appendChild(chip);
+    }
+  } catch(e) {}
+}
+
+function buildSheetDetails(u, isFollowing) {
+  const el = document.getElementById("sheetDetails");
+  el.innerHTML = `<div class="detail-section-label">Details</div>`;
+  const priv = u.privacy_settings || {};
+
+  // Email
+  if (!priv.hide_email && u.email) {
+    const row = document.createElement("div"); row.className = "detail-row";
+    row.innerHTML = `<i class="ph ph-at"></i><span>${u.email}</span>`;
+    el.appendChild(row);
+  }
+  // Location
+  if (u.location) {
+    const row = document.createElement("div"); row.className = "detail-row";
+    row.innerHTML = `<i class="ph ph-map-pin"></i><span>${u.location}</span>`;
+    el.appendChild(row);
+  }
+  // Privacy note
+  const lsPriv = (priv.show_last_seen || "everyone");
+  if (lsPriv !== "everyone") {
+    const row = document.createElement("div"); row.className = "detail-row";
+    row.innerHTML = `<i class="ph ph-lock"></i><span>Last seen shown to ${lsPriv} only</span>`;
+    el.appendChild(row);
+  }
+  if (!el.querySelector(".detail-row")) {
+    el.innerHTML += `<div class="detail-row" style="border:none;"><i class="ph ph-info"></i><span style="color:var(--muted);">No public details</span></div>`;
+  }
+}
+
+function buildSheetSocial(u) {
+  const el = document.getElementById("sheetSocial");
+  el.innerHTML = "";
+  if (!u.social_links || !Object.keys(u.social_links).length) return;
+  const icons = {
+    twitter:"ph-twitter-logo", instagram:"ph-instagram-logo",
+    github:"ph-github-logo", linkedin:"ph-linkedin-logo", website:"ph-globe"
+  };
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "padding:0 20px 10px;";
+  Object.entries(u.social_links).forEach(([platform, val]) => {
+    if (!val) return;
+    const row = document.createElement("div"); row.className = "detail-row";
+    const iconCls = icons[platform.toLowerCase()] || "ph-link";
+    row.innerHTML = `<i class="ph ${iconCls}"></i><span style="color:var(--brand);text-decoration:underline;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${val}</span>`;
+    row.querySelector("span").onclick = () => window.open(val.startsWith("http") ? val : `https://${val}`, "_blank");
+    wrap.appendChild(row);
+  });
+  if (wrap.children.length) el.appendChild(wrap);
+}
+
+function closeSheet() {
+  document.getElementById("sheetOverlay").classList.remove("open");
+  document.getElementById("profileSheet").classList.remove("open");
+  sheetUser = null;
+}
+
+// Sheet events
+document.getElementById("sheetOverlay").addEventListener("click", closeSheet);
+document.getElementById("sheetFollowBtn").addEventListener("click", () => {
+  if (sheetUser) toggleFollow(sheetUser.id, true);
+});
+document.getElementById("sheetMsgBtn").addEventListener("click", () => {
+  if (sheetUser) window.location.href = `chats.html?uid=${sheetUser.id}`;
+});
+document.getElementById("sheetShareBtn").addEventListener("click", shareProfile);
+document.getElementById("sheetMuteBtn").addEventListener("click", sheetToggleMute);
+document.getElementById("sheetBlockBtn").addEventListener("click", sheetBlock);
+
+// ══════════════════════════════════════════════════════════
+// MUTE / BLOCK
+// ══════════════════════════════════════════════════════════
+async function sheetToggleMute() {
+  if (!sheetUser) return;
+  const isMuted = mutedSet.has(sheetUser.id);
+  try {
+    if (isMuted) {
+      await sb.from("mutes").delete().eq("user_id", me.id).eq("muted_id", sheetUser.id);
+      mutedSet.delete(sheetUser.id);
+      document.getElementById("sheetMuteLabel").textContent = "Mute";
+      toast("Unmuted @" + sheetUser.username, "info");
+    } else {
+      await sb.from("mutes").insert({ user_id: me.id, muted_id: sheetUser.id });
+      mutedSet.add(sheetUser.id);
+      document.getElementById("sheetMuteLabel").textContent = "Unmute";
+      toast("Muted @" + sheetUser.username, "info");
+    }
+    renderList();
+  } catch(e) { toast("Could not update — try again", "bad"); }
+}
+
+async function sheetBlock() {
+  if (!sheetUser) return;
+  const u = sheetUser;
+  closeSheet();
+  try {
+    await sb.from("blocks").insert({ user_id: me.id, blocked_id: u.id });
+    blockedSet.add(u.id);
+    toast("Blocked @" + u.username, "bad");
+    renderList();
+  } catch(e) { toast("Could not block — try again", "bad"); }
+}
+
+// ══════════════════════════════════════════════════════════
+// SHARE PROFILE
+// ══════════════════════════════════════════════════════════
+async function shareProfile() {
+  if (!sheetUser) return;
+  const url  = `${location.origin}/profile.html?uid=${sheetUser.id}`;
+  const name = sheetUser.full_name || sheetUser.username || "User";
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: name, text: `Check out ${name} on NovaChat`, url });
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast("Profile link copied!", "good");
+    }
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════════
+// LOCATION CHIPS
+// ══════════════════════════════════════════════════════════
+function buildLocationChips() {
+  const wrap = document.getElementById("locationChips");
+  const locs = [...new Set(allUsers.map(u => u.location).filter(Boolean))];
+  if (!locs.length) { wrap.style.display = "none"; return; }
+  wrap.innerHTML = "";
+  locs.forEach(loc => {
+    const chip = document.createElement("button");
+    chip.className = "loc-chip" + (activeLocation === loc ? " active" : "");
+    chip.textContent = "📍 " + loc;
+    chip.addEventListener("click", () => {
+      activeLocation = activeLocation === loc ? null : loc;
+      buildLocationChips();
+      renderList();
+    });
+    wrap.appendChild(chip);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// PEOPLE YOU MAY KNOW
+// ══════════════════════════════════════════════════════════
+async function buildMaybePeople() {
+  const wrap = document.getElementById("maybePeopleWrap");
+  const list = document.getElementById("maybePeopleList");
+  if (!myFollowingList.length) { wrap.style.display = "none"; return; }
+
+  try {
+    // Get who my followed people follow
+    const { data } = await sb.from("follows")
+      .select("following_id")
+      .in("follower_id", myFollowingList)
+      .neq("following_id", me.id);
+
+    if (!data?.length) { wrap.style.display = "none"; return; }
+
+    // Count frequency, filter already following / blocked
+    const freq = {};
+    data.forEach(r => {
+      if (!followingSet.has(r.following_id) && !blockedSet.has(r.following_id))
+        freq[r.following_id] = (freq[r.following_id] || 0) + 1;
+    });
+
+    const sorted = Object.entries(freq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([id]) => allUsers.find(u => u.id === id))
+      .filter(Boolean);
+
+    if (!sorted.length) { wrap.style.display = "none"; return; }
+
+    list.innerHTML = "";
+    sorted.forEach(u => {
+      const card = document.createElement("div");
+      card.className = "maybe-card";
+      const isF = followingSet.has(u.id);
+      card.innerHTML = `
+        <div class="avatar avatar-xs" id="maybe-av-${u.id}" style="width:40px;height:40px;font-size:13px;"></div>
+        <div class="m-name">${u.full_name || u.username || "User"}</div>
+        <button class="m-follow ${isF ? "following" : ""}" data-uid="${u.id}">
+          ${isF ? "✓" : "Follow"}
+        </button>
+      `;
+      const avEl = card.querySelector(`#maybe-av-${u.id}`);
+      if (avEl) renderAvatar(avEl, u, 40);
+      card.querySelector(".m-follow").addEventListener("click", e => {
+        e.stopPropagation();
+        toggleFollow(u.id);
+        buildMaybePeople();
+      });
+      card.addEventListener("click", () => openSheet(u));
+      list.appendChild(card);
+    });
+
+    wrap.style.display = "block";
+  } catch(e) { wrap.style.display = "none"; }
+}
+
+// ══════════════════════════════════════════════════════════
+// TRENDING
+// ══════════════════════════════════════════════════════════
+async function buildTrending() {
+  const wrap = document.getElementById("trendingWrap");
+  const list = document.getElementById("trendingList");
+  try {
+    // Get follower counts for all users
+    const ids = allUsers.map(u => u.id);
+    if (!ids.length) { wrap.style.display = "none"; return; }
+
+    const { data } = await sb.from("follows")
+      .select("following_id")
+      .in("following_id", ids);
+
+    if (!data?.length) { wrap.style.display = "none"; return; }
+
+    const counts = {};
+    data.forEach(r => counts[r.following_id] = (counts[r.following_id] || 0) + 1);
+
+    const top = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id, count]) => ({ user: allUsers.find(u => u.id === id), count }))
+      .filter(x => x.user && !blockedSet.has(x.user.id));
+
+    if (!top.length) { wrap.style.display = "none"; return; }
+
+    list.innerHTML = "";
+    top.forEach(({ user: u, count }) => {
+      const card = document.createElement("div");
+      card.className = "trending-card";
+      card.innerHTML = `
+        <div class="avatar avatar-xs" id="trend-av-${u.id}" style="width:40px;height:40px;font-size:13px;"></div>
+        <div class="t-name">${u.full_name || u.username || "User"}</div>
+        <div class="t-followers">${count} follower${count !== 1 ? "s" : ""}</div>
+      `;
+      const avEl = card.querySelector(`#trend-av-${u.id}`);
+      if (avEl) renderAvatar(avEl, u, 40);
+      card.addEventListener("click", () => openSheet(u));
+      list.appendChild(card);
+    });
+
+    wrap.style.display = "block";
+  } catch(e) { wrap.style.display = "none"; }
+}
+
+// ══════════════════════════════════════════════════════════
+// FILTER TABS
+// ══════════════════════════════════════════════════════════
+document.querySelectorAll(".filter-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".filter-tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeTab = btn.dataset.tab;
+    renderList();
+  });
+});
+
+// ══════════════════════════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════════════════════════
+document.getElementById("searchInput").addEventListener("input", e => {
+  searchQ = e.target.value.trim();
+  renderList();
+});
+
+// ══════════════════════════════════════════════════════════
+// SORT DROPDOWN
+// ══════════════════════════════════════════════════════════
+const sortBtn = document.getElementById("sortBtn");
+const sortDrop = document.getElementById("sortDropdown");
+sortBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  sortDrop.classList.toggle("open");
+});
+document.querySelectorAll(".sort-opt").forEach(opt => {
+  opt.addEventListener("click", () => {
+    activeSort = opt.dataset.sort;
+    document.querySelectorAll(".sort-opt").forEach(o => o.classList.remove("active"));
+    opt.classList.add("active");
+    sortDrop.classList.remove("open");
+    renderList();
+  });
+});
+document.addEventListener("click", () => sortDrop.classList.remove("open"));
+
+// ══════════════════════════════════════════════════════════
+// THEME TOGGLE
+// ══════════════════════════════════════════════════════════
+(function(){
+  const btn  = document.getElementById("themeToggle");
+  const icon = document.getElementById("themeIcon");
+  const html = document.documentElement;
+
+  function applyTheme(dark) {
+    if (dark) { html.setAttribute("data-theme","dark"); icon.className = "ph ph-sun"; }
+    else       { html.removeAttribute("data-theme");     icon.className = "ph ph-moon"; }
+  }
+
+  const saved = localStorage.getItem("nova-theme");
+  if (saved) applyTheme(saved === "dark");
+  else if (window.matchMedia?.("(prefers-color-scheme:dark)").matches) applyTheme(true);
+
+  btn.addEventListener("click", () => {
+    const isDark = html.getAttribute("data-theme") === "dark";
+    applyTheme(!isDark);
+    localStorage.setItem("nova-theme", !isDark ? "dark" : "light");
+    btn.classList.remove("shaking");
+    void btn.offsetWidth;
+    btn.classList.add("shaking");
+    setTimeout(() => btn.classList.remove("shaking"), 400);
+  });
+})();
+
+// ══════════════════════════════════════════════════════════
+// OFFLINE DETECTION
+// ══════════════════════════════════════════════════════════
+const offlineEl = document.getElementById("offline");
+window.addEventListener("offline", () => offlineEl.classList.add("show"));
+window.addEventListener("online",  () => offlineEl.classList.remove("show"));
+if (!navigator.onLine) offlineEl.classList.add("show");
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+async function init() {
+  // Session guard
+  const { data: sessionData } = await sb.auth.getSession();
+  if (!sessionData.session) { window.location.href = "index.html"; return; }
+  me = sessionData.session.user;
+
+  showSkeleton();
+
+  try {
+    // All users (except self)
+    const { data: users, error: uErr } = await sb.from("profiles")
+      .select("*")
+      .neq("id", me.id)
+      .order("full_name", { ascending: true });
+    if (uErr) throw uErr;
+    allUsers = users || [];
+
+    // My follows
+    const { data: fRows } = await sb.from("follows")
+      .select("following_id").eq("follower_id", me.id);
+    followingSet    = new Set((fRows || []).map(r => r.following_id));
+    myFollowingList = [...followingSet];
+
+    // Who follows me
+    const { data: fmRows } = await sb.from("follows")
+      .select("follower_id").eq("following_id", me.id);
+    followersOfMeSet = new Set((fmRows || []).map(r => r.follower_id));
+
+    // Mutes
+    try {
+      const { data: mr } = await sb.from("mutes").select("muted_id").eq("user_id", me.id);
+      mutedSet = new Set((mr || []).map(r => r.muted_id));
+    } catch(e) {}
+
+    // Blocks
+    try {
+      const { data: br } = await sb.from("blocks").select("blocked_id").eq("user_id", me.id);
+      blockedSet = new Set((br || []).map(r => r.blocked_id));
+    } catch(e) {}
+
+    buildLocationChips();
+    renderList();
+    buildMaybePeople();
+    buildTrending();
+
+  } catch(e) {
+    toast("Could not load users", "bad", e.message || "Check your connection");
+    document.getElementById("userList").innerHTML = `
+      <div class="empty-state">
+        <i class="ph ph-warning-circle"></i>
+        <p>Could not load users. Please refresh.</p>
+      </div>
+    `;
+  } finally {
+    const loader = document.getElementById("pageLoader");
+    loader.classList.add("hide");
+    setTimeout(() => loader.style.display = "none", 400);
+  }
+}
+
+init();
+</script>
+
+<!-- BOTTOM TAB BAR -->
+<nav class="tabbar">
+  <a class="tab-btn" href="chats.html"><i class="ph ph-chats"></i><span>Chats</span></a>
+  <a class="tab-btn active" href="discover.html"><i class="ph-fill ph-compass"></i><span>Discover</span></a>
+  <a class="tab-btn" href="notifications.html"><i class="ph ph-bell"></i><span>Alerts</span></a>
+  <a class="tab-btn" href="profile.html"><i class="ph ph-user-circle"></i><span>Profile</span></a>
+</nav>
+
+</body>
+</html>
