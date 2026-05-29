@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#1d4ed8" />
+<title>NovaChat — Discover</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='30' r='26' fill='%231d4ed8'/><circle cx='22' cy='30' r='3.2' fill='white'/><circle cx='32' cy='30' r='3.2' fill='white'/><circle cx='42' cy='30' r='3.2' fill='white'/><path d='M26 52 L32 60 L38 52 Z' fill='%231d4ed8'/></svg>" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<style>
+/* ====== CSS VARIABLES — matched exactly to profile.html ====== */
+:root{
+  --bg:#dde6f0;
+  --bg-2:#d4e2f8;
+  --card:#f0f6ff;
+  --card-2:#f8faff;
+  --ink:#0b1b3a;
+  --ink-soft:#5b6b8c;
+  --muted:#9aa6c2;
+  --line:#e3eaf6;
+  --surface:#c9dcf6;
+  --surface-2:#bcd2f0;
+  --surface-border:#a8c2e8;
+  --brand:#1d4ed8;
+  --brand-2:#3b82f6;
+  --brand-3:#60a5fa;
+  --brand-glow:rgba(29,78,216,.45);
+  --hero:#1d4ed8;
+  --hero-2:#2563eb;
+  --good:#22c55e;
+  --warn:#f59e0b;
+  --bad:#ef4444;
+  --radius:18px;
+  --radius-lg:24px;
+  --shadow-sm:0 8px 24px -6px rgba(15,40,120,.18);
+  --shadow:0 18px 40px -18px rgba(15,40,90,.25);
+  --shadow-lg:0 28px 70px -18px rgba(15,40,120,.35);
+  --transition:.25s cubic-bezier(.4,.0,.2,1);
+  --spring:cubic-bezier(.34,1.4,.64,1);
+  --glass-bg:rgba(255,255,255,0.55);
+  --glass-border:rgba(255,255,255,0.80);
+}
+
+/* ====== DARK THEME — matched to profile.html ====== */
+[data-theme="dark"]{
+  --bg:#0d1117;
+  --bg-2:#0f1724;
+  --card:#111827;
+  --card-2:#1a2235;
+  --ink:#ecf0f7;
+  --ink-soft:#8ea0b9;
+  --muted:#596d86;
+  --line:#1e2d42;
+  --surface:#0d1420;
+  --surface-2:#182030;
+  --surface-border:#273d56;
+  --hero:#1e3a8a;
+  --hero-2:#1d4ed8;
+  --shadow-sm:0 8px 24px -6px rgba(0,0,0,.50);
+  --shadow:0 18px 40px -18px rgba(0,0,0,.62);
+  --shadow-lg:0 28px 70px -18px rgba(0,0,0,.72);
+}
+[data-theme="dark"] .topbar{background:#111827;border-color:#1e2d42;}
+[data-theme="dark"] #themeToggle{background:#0d1420;border-color:#1e3a6e;color:#60a5fa;}
+[data-theme="dark"] .tabbar{
+  background:#111827;
+  border-color:#1e2d42;
+}
+[data-theme="dark"] .tab-btn{color:#596d86;}
+[data-theme="dark"] .tab-btn.active{color:#60a5fa;}
+[data-theme="dark"] .tab-btn.active i{color:#60a5fa;}
+[data-theme="dark"] .tab-btn.active span{color:#60a5fa;}
+[data-theme="dark"] .tab-btn .tab-line{background:#60a5fa;}
+[data-theme="dark"] .search-bar{background:rgba(13,20,32,.8);border-color:#1e2d42;color:#ecf0f7;}
+[data-theme="dark"] .search-bar::placeholder{color:#596d86;}
+[data-theme="dark"] .search-wrap i{color:#596d86;}
+[data-theme="dark"] .filter-btn{background:#0d1420;border-color:#1e2d42;color:#8ea0b9;}
+[data-theme="dark"] .filter-btn.active{background:var(--brand);border-color:var(--brand);color:#fff;}
+[data-theme="dark"] .users-card{background:#111827;border-color:#1e2d42;}
+[data-theme="dark"] .user-divider{background:linear-gradient(90deg, transparent, #1e2d42 20%, #1e2d42 80%, transparent);}
+[data-theme="dark"] .user-row:active{background:rgba(255,255,255,.04);}
+[data-theme="dark"] .follow-btn{background:rgba(29,78,216,.15);border-color:rgba(29,78,216,.3);color:var(--brand-3);}
+[data-theme="dark"] .follow-btn.following{background:rgba(255,255,255,.06);border-color:#1e2d42;color:#8ea0b9;}
+[data-theme="dark"] .sheet-card{background:var(--card);}
+[data-theme="dark"] .sheet-stat-island{background:rgba(13,20,32,.6);border-color:#273d56;}
+[data-theme="dark"] .sheet-stat-label{color:#596d86;}
+[data-theme="dark"] .sheet-detail-row{border-color:#1e2d42;color:#8ea0b9;}
+[data-theme="dark"] .sheet-detail-row i{color:#596d86;}
+[data-theme="dark"] .section-chip{background:#0d1420;border-color:#1e2d42;color:#8ea0b9;}
+[data-theme="dark"] .empty-state{color:#596d86;}
+[data-theme="dark"] .notif-card{background:#1a2540;}
+[data-theme="dark"] .notif-title{color:#ecf0f7;}
+[data-theme="dark"] .notif-msg{color:#8ea0b9;}
+/* notif-icon-wrap dark handled in toast block above */
+[data-theme="dark"] .sheet{background:#111827;}
+[data-theme="dark"] .sheet-handle{background:rgba(255,255,255,.12);}
+[data-theme="dark"] .sheet-bio{border-color:#1e2d42;}
+[data-theme="dark"] .sheet-actions{border-color:#1e2d42;}
+[data-theme="dark"] .sheet-details-label{color:#8ea0b9;}
+
+/* ====== RESET ====== */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  user-select:none;
+  /* Disable pull-to-refresh */
+  overscroll-behavior-y:none;
+}
+input,textarea{-webkit-user-select:text;-moz-user-select:text;user-select:text;}
+button{font:inherit;color:inherit;border:0;background:transparent;cursor:pointer;}
+
+body{
+  font-family:'Poppins',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:var(--ink);
+  background:var(--bg);
+  min-height:100vh;
+  overflow-x:hidden;
+  transition:background .35s ease, color .25s ease;
+}
+body::-webkit-scrollbar{display:none;}
+body{scrollbar-width:none;}
+
+/* ====== PAGE ====== */
+.page{
+  max-width:440px;
+  margin:0 auto;
+  min-height:100vh;
+  padding:calc(76px + env(safe-area-inset-top,0px)) 16px calc(96px + env(safe-area-inset-bottom,0px));
+}
+
+/* ====== TOPBAR — pill, matched to profile.html ====== */
+.topbar{
+  position:fixed;
+  top:calc(12px + env(safe-area-inset-top,0px));
+  left:50%;transform:translateX(-50%);
+  width:min(calc(100vw - 32px),416px);
+  height:56px;z-index:80;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 12px 0 16px;
+  border-radius:28px;
+  background:var(--card);
+  border:0.5px solid var(--line);
+  box-shadow:0 8px 32px rgba(0,0,0,0.10);
+  transition:background .3s, border-color .3s;
+}
+.topbar-brand{display:flex;align-items:center;gap:10px;}
+.topbar-compass{font-size:22px;color:var(--brand);}
+.topbar-logo{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  display:grid;place-items:center;
+  flex-shrink:0;
+  box-shadow:0 4px 12px -4px rgba(29,78,216,.45);
+}
+.topbar-title{font-weight:800;font-size:18px;color:var(--ink);letter-spacing:-.3px;}
+#themeToggle{
+  width:34px;height:34px;border-radius:14px;
+  display:grid;place-items:center;
+  color:var(--brand);
+  background:var(--surface);
+  border:1.5px solid var(--brand-3);
+  box-shadow:0 2px 8px -2px rgba(29,78,216,.18);
+  transition:background .25s,border-color .25s,color .25s,transform .15s;
+  flex-shrink:0;
+  cursor:pointer;
+}
+#themeToggle:active{transform:scale(.88);}
+#themeToggle i{font-size:18px;transition:opacity .2s,transform .25s;}
+@keyframes themeShake{
+  0%{transform:rotate(0deg);}20%{transform:rotate(-18deg);}
+  40%{transform:rotate(18deg);}60%{transform:rotate(-12deg);}
+  80%{transform:rotate(10deg);}100%{transform:rotate(0deg);}
+}
+#themeToggle.shaking i{animation:themeShake .4s ease;}
+
+/* Refresh button */
+#refreshBtn{
+  height:34px;padding:0 12px 0 10px;border-radius:14px;
+  display:flex;align-items:center;gap:6px;
+  color:var(--brand);
+  background:var(--surface);
+  border:1.5px solid var(--brand-3);
+  box-shadow:0 2px 8px -2px rgba(29,78,216,.18);
+  transition:background .25s,border-color .25s,color .25s,transform .15s;
+  flex-shrink:0;
+  font-size:13px;font-weight:700;font-family:'Poppins',sans-serif;
+  letter-spacing:-.1px;
+  cursor:pointer;
+}
+#refreshBtn:active{transform:scale(.92);}
+#refreshBtn i{font-size:16px;transition:transform .5s cubic-bezier(.34,1.4,.64,1);}
+#refreshBtn.spinning i{transform:rotate(360deg);}
+[data-theme="dark"] #refreshBtn{background:#0d1420;border-color:#1e3a6e;color:#60a5fa;}
+
+/* ====== OFFLINE ====== */
+.offline{
+  position:fixed;top:0;left:0;right:0;
+  background:var(--bad);color:#fff;
+  text-align:center;padding:6px 10px;
+  font-size:13px;font-weight:600;z-index:200;
+  transform:translateY(-100%);transition:transform .3s;
+}
+.offline.show{transform:translateY(0);}
+
+/* ====== NOTIF POPUP — matched exactly to profile.html ====== */
+.notif-popup{
+  position:fixed;
+  top:calc(76px + env(safe-area-inset-top,0px));
+  left:50%;transform:translateX(-50%) translateY(-12px);
+  z-index:300;opacity:0;pointer-events:none;
+  transition:opacity .25s ease, transform .35s var(--spring);
+  width:min(calc(100vw - 32px),400px);
+}
+.notif-popup.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+
+/* Base card — slim */
+.notif-card{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px 10px 14px;
+  border-radius:12px;
+  background:rgba(248,250,255,.97);
+  border-left:3px solid var(--brand);
+  box-shadow:0 4px 20px -4px rgba(15,40,120,.18), 0 1px 6px rgba(0,0,0,.07);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+
+/* Type backgrounds */
+.notif-card.success{ background:rgba(240,253,244,.97); border-left-color:#16a34a; }
+.notif-card.error  { background:rgba(254,242,242,.97); border-left-color:#dc2626; }
+.notif-card.warning{ background:rgba(255,251,235,.97); border-left-color:#d97706; }
+.notif-card.info   { background:rgba(239,246,255,.97); border-left-color:#2563eb; }
+/* Legacy aliases */
+.notif-card.good   { background:rgba(240,253,244,.97); border-left-color:#16a34a; }
+.notif-card.bad    { background:rgba(254,242,242,.97); border-left-color:#dc2626; }
+
+/* Dark mode */
+[data-theme="dark"] .notif-card         { background:rgba(17,24,39,.96); box-shadow:0 4px 20px -4px rgba(0,0,0,.45); }
+[data-theme="dark"] .notif-card.success,
+[data-theme="dark"] .notif-card.good    { background:rgba(5,46,22,.92);  border-left-color:#22c55e; }
+[data-theme="dark"] .notif-card.error,
+[data-theme="dark"] .notif-card.bad     { background:rgba(69,10,10,.92); border-left-color:#f87171; }
+[data-theme="dark"] .notif-card.warning { background:rgba(69,39,0,.92);  border-left-color:#fbbf24; }
+[data-theme="dark"] .notif-card.info    { background:rgba(8,28,70,.92);  border-left-color:#60a5fa; }
+
+/* Icon — naked, no circle wrapper */
+.notif-icon-wrap{
+  display:grid;place-items:center;flex:0 0 20px;
+  background:none !important;
+  width:20px;height:20px;border-radius:0;
+}
+.notif-icon-wrap i{ font-size:18px; color:var(--brand); }
+.notif-card.success .notif-icon-wrap i,
+.notif-card.good    .notif-icon-wrap i { color:#16a34a; }
+.notif-card.error   .notif-icon-wrap i,
+.notif-card.bad     .notif-icon-wrap i { color:#dc2626; }
+.notif-card.warning .notif-icon-wrap i { color:#d97706; }
+.notif-card.info    .notif-icon-wrap i { color:#2563eb; }
+[data-theme="dark"] .notif-card.success .notif-icon-wrap i,
+[data-theme="dark"] .notif-card.good    .notif-icon-wrap i { color:#22c55e; }
+[data-theme="dark"] .notif-card.error   .notif-icon-wrap i,
+[data-theme="dark"] .notif-card.bad     .notif-icon-wrap i { color:#f87171; }
+[data-theme="dark"] .notif-card.warning .notif-icon-wrap i { color:#fbbf24; }
+[data-theme="dark"] .notif-card.info    .notif-icon-wrap i { color:#60a5fa; }
+
+/* Text */
+.notif-body{ flex:1; min-width:0; }
+.notif-title{ font-size:13px; font-weight:700; color:var(--ink); line-height:1.2; }
+.notif-msg  { font-size:12px; color:var(--ink-soft); margin-top:1px; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-theme="dark"] .notif-title{ color:#ecf0f7; }
+[data-theme="dark"] .notif-msg  { color:#8ea0b9; }
+
+/* Close */
+.notif-close{
+  color:var(--muted);font-size:16px;
+  width:24px;height:24px;display:grid;place-items:center;
+  border-radius:6px;flex:0 0 24px;
+  transition:background var(--transition),color var(--transition);
+}
+.notif-close:active{ background:rgba(0,0,0,.07); }
+[data-theme="dark"] .notif-close{ color:#596d86; }
+[data-theme="dark"] .notif-close:active{ background:rgba(255,255,255,.08); }
+
+/* ====== SEARCH ====== */
+.search-section{padding:0 0 12px;}
+.search-wrap{position:relative;}
+.search-wrap i.ph-magnifying-glass{
+  position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  font-size:18px;color:var(--muted);pointer-events:none;
+  transition:opacity .2s ease, transform .2s var(--spring);
+}
+.search-wrap .search-clear{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%) scale(0);
+  width:28px;height:28px;border-radius:50%;
+  background:var(--surface-2);border:none;cursor:pointer;
+  display:grid;place-items:center;
+  opacity:0;
+  transition:opacity .2s ease, transform .25s var(--spring);
+  color:var(--ink-soft);pointer-events:none;
+}
+.search-wrap .search-clear i{
+  position:static;transform:none;font-size:14px;color:var(--ink-soft);pointer-events:none;
+}
+.search-wrap.has-text .search-clear{opacity:1;transform:translateY(-50%) scale(1);pointer-events:auto;}
+.search-wrap.has-text .ph-magnifying-glass{opacity:0;transform:translateY(-50%) scale(.7);}
+.search-bar{
+  width:100%;height:46px;
+  padding:0 44px 0 46px;
+  border-radius:999px;
+  background:var(--card);
+  border:0.5px solid var(--line);
+  box-shadow:var(--shadow-sm);
+  font-size:14px;font-weight:500;
+  outline:none;
+  transition:border-color var(--transition),box-shadow var(--transition);
+  color:var(--ink);
+  font-family:'Poppins',sans-serif;
+}
+.search-bar::placeholder{color:var(--muted);}
+.search-bar:focus{border-color:var(--brand-3);box-shadow:0 0 0 3px rgba(96,165,250,.2);}
+
+/* ====== FILTER CHIPS ====== */
+.filters{
+  display:flex;gap:8px;
+  padding:0 0 14px;
+  overflow-x:auto;scrollbar-width:none;
+}
+.filters::-webkit-scrollbar{display:none;}
+.filter-btn{
+  height:34px;padding:0 16px;border-radius:999px;
+  font-size:13px;font-weight:600;white-space:nowrap;
+  background:var(--surface-2);
+  border:1px solid var(--surface-border);
+  color:var(--ink-soft);
+  transition:all var(--transition);
+  flex-shrink:0;
+  font-family:'Poppins',sans-serif;
+}
+.filter-btn.active{
+  background:var(--brand);border-color:var(--brand);
+  color:#fff;
+  box-shadow:0 8px 20px -8px var(--brand-glow);
+}
+.filter-btn:active{transform:scale(.95);}
+
+/* ====== SECTION HEADER ====== */
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 0 10px;
+}
+.section-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:700;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--ink-soft);
+}
+.section-chip i{font-size:13px;}
+.people-count{font-size:13px;font-weight:600;color:var(--muted);}
+
+/* ====== UNIFIED USERS CARD ====== */
+.users-card{
+  background:var(--card);
+  border:0.5px solid var(--line);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  opacity:0;transform:translateY(14px);
+  animation:cardIn .55s var(--spring) forwards .1s;
+}
+@keyframes cardIn{to{opacity:1;transform:translateY(0);}}
+
+/* Stylish divider between users */
+.user-divider{
+  height:1px;
+  margin:0 16px;
+  background:linear-gradient(90deg, transparent, var(--line) 15%, var(--surface-border) 50%, var(--line) 85%, transparent);
+  flex-shrink:0;
+}
+
+.user-row{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 16px;
+  cursor:pointer;
+  transition:background var(--transition);
+  position:relative;
+}
+.user-row:active{background:rgba(29,78,216,.04);}
+
+/* Avatar */
+.u-avatar{
+  width:52px;height:52px;border-radius:50%;
+  display:grid;place-items:center;
+  font-weight:700;font-size:16px;color:#fff;
+  flex-shrink:0;position:relative;
+  box-shadow:0 4px 14px -4px rgba(0,0,60,.25);
+}
+.u-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.u-dot{
+  position:absolute;right:1px;bottom:1px;
+  width:13px;height:13px;border-radius:50%;
+  background:var(--good);
+  border:2.5px solid var(--card);
+  display:none;
+}
+.u-dot.show{display:block;}
+
+/* Info */
+.u-info{flex:1;min-width:0;}
+.u-name{
+  font-size:15px;font-weight:700;color:var(--ink);line-height:1.2;
+  display:flex;align-items:center;gap:5px;
+  min-width:0;overflow:hidden;
+  white-space:nowrap;
+}
+.u-name-text{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  min-width:0;flex:1 1 0;
+}
+.u-name .verified-icon{font-size:14px;color:var(--brand);flex-shrink:0;}
+.u-meta{font-size:12px;color:var(--muted);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.u-bio-preview{font-size:12px;color:var(--ink-soft);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+
+/* Follow button */
+.follow-btn{
+  height:34px;padding:0 14px;border-radius:999px;
+  font-size:12px;font-weight:700;
+  display:inline-flex;align-items:center;gap:5px;
+  flex-shrink:0;
+  transition:all var(--transition);
+  border:1.5px solid var(--brand);
+  color:var(--brand);
+  background:rgba(29,78,216,.07);
+  font-family:'Poppins',sans-serif;
+}
+.follow-btn:active{transform:scale(.93);}
+.follow-btn.following{
+  background:var(--surface);
+  border-color:var(--surface-border);
+  color:var(--ink-soft);
+}
+.follow-btn i{font-size:14px;}
+
+/* ====== EMPTY STATE ====== */
+.empty-state{
+  text-align:center;padding:48px 24px;
+  color:var(--ink-soft);
+}
+.empty-state i{font-size:48px;color:var(--muted);display:block;margin-bottom:12px;}
+.empty-state p{font-size:14px;font-weight:500;margin:0;}
+
+/* ---------- Bottom tab island ---------- */
+.tabbar{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(100vw, 480px);
+  height:64px;
+  background:var(--card);
+  border:0.5px solid var(--line);
+  border-radius:28px 28px 0 0;
+  box-shadow:0 -4px 24px rgba(0,0,0,0.10);
+  display:flex;align-items:stretch;justify-content:space-around;
+  padding:0 8px;z-index:80;
+  transition:background .3s, border-color .3s;
+  overflow:visible;
+}
+.tab-btn{
+  position:relative;flex:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding-top:8px;
+  gap:3px;color:var(--muted);font-size:10.5px;font-weight:600;
+  text-decoration:none;
+  transition:color var(--transition);
+  overflow:visible;
+}
+.tab-btn i{
+  font-size:24px;
+  transition:color var(--transition), transform .25s var(--spring);
+}
+.tab-btn span{
+  line-height:1;
+  font-size:10.5px;
+  font-weight:600;
+  opacity:1;
+  transform:none;
+  max-height:none;
+  overflow:visible;
+  transition:color var(--transition);
+}
+/* Remove old bubble styles */
+.tab-btn::before{ content:none; }
+.tab-btn::after{ content:none; }
+.tab-btn .tab-bubble{ display:none !important; }
+
+/* Bottom line indicator */
+.tab-btn .tab-line{
+  position:absolute;
+  bottom:-1px;
+  left:50%;
+  transform:translateX(-50%) scaleX(0);
+  width:28px;
+  height:3px;
+  border-radius:3px 3px 0 0;
+  background:var(--brand);
+  transition:transform .35s var(--spring), background .25s;
+}
+.tab-btn.active .tab-line{
+  transform:translateX(-50%) scaleX(1);
+}
+.tab-btn.active{
+  color:var(--brand);
+}
+.tab-btn.active i{
+  color:var(--brand);
+  transform:translateY(-2px);
+}
+.tab-btn.active span{
+  color:var(--brand);
+  font-weight:700;
+}
+.tab-btn .notif-dot{
+  position:absolute;top:6px;right:calc(50% - 18px);
+  width:9px;height:9px;border-radius:50%;
+  background:var(--bad);border:2px solid var(--card);
+  transform:scale(0);opacity:0;
+  transition:transform .35s var(--spring), opacity .25s var(--transition);
+  z-index:4;
+}
+.tab-btn .notif-dot.show{transform:scale(1);opacity:1;}
+
+/* ====== LOADER — smooth bg fade then card animate in ====== */
+.loader{
+  position:fixed;inset:0;z-index:999;
+  background:var(--bg);
+  display:grid;place-items:center;
+  opacity:1;
+  transition:opacity .4s ease;
+}
+.loader.hide{opacity:0;pointer-events:none;}
+/* Cards already use islandIn / cardIn; ensure discover card delay layers */
+.users-card{
+  animation-delay:.18s;
+}
+
+/* ====== MUTUAL BADGE on follow button ====== */
+.follow-btn.mutual{
+  background:rgba(34,197,94,.08);
+  border-color:rgba(34,197,94,.5);
+  color:#16a34a;
+}
+[data-theme="dark"] .follow-btn.mutual{
+  background:rgba(34,197,94,.12);
+  border-color:rgba(34,197,94,.3);
+  color:#4ade80;
+}
+.follow-btn .mutual-icon{ font-size:13px; }
+
+/* Mutual tag on user row */
+.u-mutual-tag{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:10px;font-weight:700;color:#16a34a;
+  background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);
+  border-radius:999px;padding:1px 7px;margin-top:3px;
+  line-height:1.4;
+}
+[data-theme="dark"] .u-mutual-tag{color:#4ade80;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.2);}
+
+/* Mutual badge on sheet follow button */
+.sheet-follow-btn.mutual{
+  background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.5);color:#16a34a;
+}
+[data-theme="dark"] .sheet-follow-btn.mutual{
+  background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.3);color:#4ade80;
+}
+
+/* ====== BLOCK / REPORT — sheet action area ====== */
+.sheet-danger-actions{
+  display:flex;gap:8px;
+  padding:10px 16px 16px;
+  border-top:1px solid var(--line);
+}
+.sheet-block-btn, .sheet-report-btn{
+  flex:1;height:40px;border-radius:10px;
+  font-size:13px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  font-family:'Poppins',sans-serif;
+  transition:transform var(--transition),background var(--transition);
+}
+.sheet-block-btn{
+  background:rgba(239,68,68,.07);
+  border:1.5px solid rgba(239,68,68,.25);
+  color:var(--bad);
+}
+.sheet-block-btn:active{transform:scale(.96);background:rgba(239,68,68,.14);}
+.sheet-report-btn{
+  background:rgba(245,158,11,.07);
+  border:1.5px solid rgba(245,158,11,.25);
+  color:var(--warn);
+}
+.sheet-report-btn:active{transform:scale(.96);background:rgba(245,158,11,.14);}
+[data-theme="dark"] .sheet-block-btn{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.2);color:#f87171;}
+[data-theme="dark"] .sheet-report-btn{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.2);color:#fbbf24;}
+
+/* ====== CONFIRM BOTTOM SHEET (block/report) ====== */
+.confirm-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(11,27,58,.55);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  opacity:0;pointer-events:none;
+  transition:opacity .3s ease;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.confirm-overlay.show{opacity:1;pointer-events:auto;}
+.confirm-sheet{
+  background:var(--card);
+  border-radius:24px 24px 0 0;
+  width:min(100vw,480px);
+  padding:0 20px calc(28px + env(safe-area-inset-bottom,0px));
+  transform:translateY(100%);
+  transition:transform .38s cubic-bezier(.34,1.2,.64,1),background .3s;
+}
+.confirm-overlay.show .confirm-sheet{transform:translateY(0);}
+.confirm-handle{width:36px;height:4px;border-radius:99px;background:var(--line);margin:10px auto 18px;}
+.confirm-icon{
+  width:56px;height:56px;border-radius:50%;
+  display:grid;place-items:center;font-size:26px;
+  margin:0 auto 14px;
+}
+.confirm-icon.block-icon{background:#fee2e2;color:var(--bad);}
+.confirm-icon.report-icon{background:#fef3c7;color:var(--warn);}
+[data-theme="dark"] .confirm-icon.block-icon{background:rgba(239,68,68,.15);color:#f87171;}
+[data-theme="dark"] .confirm-icon.report-icon{background:rgba(245,158,11,.15);color:#fbbf24;}
+.confirm-title{font-size:17px;font-weight:800;color:var(--ink);text-align:center;margin-bottom:6px;}
+.confirm-sub{font-size:13px;color:var(--ink-soft);text-align:center;line-height:1.55;margin-bottom:18px;}
+[data-theme="dark"] .confirm-title{color:#ecf0f7;}
+[data-theme="dark"] .confirm-sub{color:#8ea0b9;}
+
+/* Report reason list */
+.report-reasons{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.report-reason-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px;border-radius:12px;
+  background:var(--surface);border:1.5px solid var(--surface-border);
+  font-size:14px;font-weight:600;color:var(--ink);text-align:left;
+  transition:border-color var(--transition),background var(--transition);
+  font-family:'Poppins',sans-serif;
+}
+.report-reason-btn:active,.report-reason-btn.selected{
+  border-color:var(--brand);background:rgba(29,78,216,.07);color:var(--brand);
+}
+[data-theme="dark"] .report-reason-btn{background:var(--surface);border-color:var(--surface-border);color:#ecf0f7;}
+[data-theme="dark"] .report-reason-btn.selected{border-color:var(--brand-3);color:var(--brand-3);}
+.report-note{
+  width:100%;padding:10px 14px;border-radius:12px;
+  border:1.5px solid var(--surface-border);
+  background:var(--surface);
+  font:500 13px/1.5 'Poppins',sans-serif;
+  color:var(--ink);outline:none;resize:none;
+  margin-bottom:14px;
+  transition:border-color var(--transition);
+}
+.report-note::placeholder{color:var(--muted);}
+.report-note:focus{border-color:var(--brand);}
+[data-theme="dark"] .report-note{background:var(--surface);border-color:var(--surface-border);color:#ecf0f7;}
+
+.confirm-actions{display:flex;gap:10px;}
+.confirm-primary{
+  flex:1;height:48px;border-radius:14px;border:none;
+  font-size:15px;font-weight:700;font-family:'Poppins',sans-serif;
+  transition:transform var(--transition),opacity var(--transition);
+}
+.confirm-primary.block-primary{background:var(--bad);color:#fff;box-shadow:0 10px 24px -10px rgba(239,68,68,.5);}
+.confirm-primary.report-primary{background:var(--brand);color:#fff;box-shadow:0 10px 24px -10px var(--brand-glow);}
+.confirm-primary:active{transform:scale(.98);}
+.confirm-primary:disabled{opacity:.45;cursor:not-allowed;}
+.confirm-cancel{
+  height:48px;padding:0 20px;border-radius:14px;
+  border:1.5px solid var(--line);
+  font-size:14px;font-weight:600;color:var(--ink-soft);font-family:'Poppins',sans-serif;
+  transition:border-color var(--transition);
+}
+.confirm-cancel:active{border-color:var(--brand);color:var(--brand);}
+[data-theme="dark"] .confirm-cancel{color:#8ea0b9;border-color:#1e2d42;}
+.spin{
+  width:36px;height:36px;border-radius:50%;
+  border:3px solid var(--line);border-top-color:var(--brand);
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ====== PROFILE BOTTOM SHEET ====== */
+.sheet-overlay{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(11,27,58,.0);
+  backdrop-filter:blur(0px);
+  -webkit-backdrop-filter:blur(0px);
+  pointer-events:none;
+  transition:background .4s ease, backdrop-filter .5s ease, -webkit-backdrop-filter .5s ease;
+}
+.sheet-overlay.show{
+  background:rgba(11,27,58,.55);
+  backdrop-filter:blur(14px) saturate(160%);
+  -webkit-backdrop-filter:blur(14px) saturate(160%);
+  pointer-events:auto;
+}
+
+@keyframes sheetEnter{
+  from{opacity:0;transform:translateX(-50%) translateY(60px) scale(.95);}
+  to{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
+}
+
+.sheet{
+  position:fixed;
+  bottom:0;left:50%;
+  transform:translateX(-50%) translateY(100%);
+  width:min(100vw, 440px);
+  max-height:90vh;
+  border-radius:28px 28px 0 0;
+  background:var(--card);
+  box-shadow:0 -20px 60px -10px rgba(15,40,120,.35);
+  z-index:101;
+  overflow:hidden;
+  transition:transform .45s var(--spring);
+  display:flex;flex-direction:column;
+}
+.sheet.open{
+  transform:translateX(-50%) translateY(0%);
+  animation:sheetEnter .45s var(--spring) both;
+}
+
+/* Drag handle */
+.sheet-handle{
+  width:40px;height:4px;border-radius:999px;
+  background:rgba(0,0,0,.12);
+  margin:12px auto 0;flex-shrink:0;
+  cursor:grab;
+}
+.sheet-handle:active{cursor:grabbing;}
+
+/* Sheet scroll container */
+.sheet-scroll{
+  overflow-y:auto;
+  scrollbar-width:none;
+  flex:1;
+}
+.sheet-scroll::-webkit-scrollbar{display:none;}
+
+/* ---- HERO SECTION ---- */
+.sheet-hero{
+  background:linear-gradient(160deg, var(--hero) 0%, var(--hero-2) 60%, #1e40af 100%);
+  padding:20px 20px 24px;
+  position:relative;overflow:hidden;
+  text-align:center;flex-shrink:0;
+  border-radius:18px;
+  margin:10px 10px 0;
+}
+.sheet-close-btn{
+  position:absolute;top:12px;right:12px;
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,.18);
+  border:none;cursor:pointer;
+  display:grid;place-items:center;
+  color:#fff;z-index:10;
+  transition:background .2s ease, transform .2s var(--spring);
+}
+.sheet-close-btn:active{background:rgba(255,255,255,.3);transform:scale(.9);}
+.sheet-close-btn i{font-size:17px;}
+.sheet-hero::before{
+  content:"";position:absolute;top:-50px;right:-50px;
+  width:160px;height:160px;border-radius:50%;
+  background:rgba(255,255,255,.06);pointer-events:none;
+}
+.sheet-hero::after{
+  content:"";position:absolute;bottom:-70px;left:-30px;
+  width:200px;height:200px;border-radius:50%;
+  background:rgba(255,255,255,.04);pointer-events:none;
+}
+.sheet-avatar{
+  width:80px;height:80px;border-radius:50%;
+  display:grid;place-items:center;
+  font-weight:700;font-size:26px;color:#fff;
+  margin:0 auto 12px;
+  border:3px solid rgba(255,255,255,.5);
+  box-shadow:0 8px 28px -8px rgba(0,0,60,.4);
+  position:relative;z-index:1;overflow:hidden;
+}
+.sheet-avatar img{width:100%;height:100%;object-fit:cover;}
+.sheet-online-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--good);margin-right:5px;vertical-align:middle;
+}
+.sheet-name{
+  font-size:21px;font-weight:800;color:#fff;
+  line-height:1.15;position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.sheet-name .v-icon{font-size:17px;color:rgba(255,255,255,.9);}
+.sheet-username{font-size:13px;color:rgba(255,255,255,.65);margin-top:4px;position:relative;z-index:1;}
+.sheet-status{
+  font-size:12px;color:rgba(255,255,255,.75);
+  margin-top:6px;position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:center;gap:4px;
+}
+
+/* ---- STAT ISLANDS ---- */
+.sheet-stats{display:flex;align-items:stretch;gap:10px;padding:16px 16px 4px;}
+.sheet-stat-island{
+  flex:1;padding:14px 8px 12px;text-align:center;
+  background:var(--surface);border:1px solid var(--surface-border);
+  border-radius:14px;cursor:default;
+  transition:transform .2s var(--spring), box-shadow .2s ease;
+  opacity:0;transform:translateY(12px) scale(.95);
+}
+.sheet-stat-island.in{opacity:1;transform:translateY(0) scale(1);}
+.sheet-stat-island:active{transform:scale(.94);}
+.sheet-stat-val{font-size:20px;font-weight:800;color:var(--ink);}
+.sheet-stat-label{font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.6px;}
+
+/* Bio */
+.sheet-bio{
+  padding:16px 20px;
+  font-size:14px;color:var(--ink-soft);
+  line-height:1.6;border-bottom:1px solid var(--line);
+}
+.sheet-bio:empty{display:none;}
+.sheet-bio.no-bio{color:var(--muted);font-style:italic;font-size:13px;}
+
+/* ---- ACTION BUTTONS ---- */
+.sheet-actions{
+  display:flex;gap:10px;
+  padding:14px 16px 16px;
+  border-bottom:1px solid var(--line);
+}
+.sheet-msg-btn, .sheet-follow-btn{position:relative;overflow:hidden;}
+.btn-ripple{
+  position:absolute;border-radius:50%;
+  background:rgba(255,255,255,.35);
+  transform:scale(0);
+  animation:rippleOut .5s ease-out forwards;
+  pointer-events:none;
+}
+@keyframes rippleOut{to{transform:scale(4);opacity:0;}}
+.sheet-msg-btn{
+  flex:1;height:46px;border-radius:12px;
+  background:var(--brand);color:#fff;font-weight:700;font-size:14px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 10px 24px -10px var(--brand-glow);
+  transition:transform var(--transition), opacity var(--transition);
+  font-family:'Poppins',sans-serif;
+}
+.sheet-msg-btn:active{transform:scale(.97);}
+.sheet-msg-btn i{font-size:18px;}
+
+.sheet-follow-btn{
+  flex:1;height:46px;border-radius:12px;
+  font-weight:700;font-size:14px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .3s ease, transform var(--transition);
+  border:2px solid var(--brand);
+  color:var(--brand);background:rgba(29,78,216,.07);
+  font-family:'Poppins',sans-serif;
+}
+.sheet-follow-btn:active{transform:scale(.97);}
+.sheet-follow-btn.following{background:var(--surface);border-color:var(--surface-border);color:var(--ink-soft);}
+.sheet-follow-btn i{font-size:18px;transition:transform .35s var(--spring);}
+.sheet-follow-btn.following i{transform:rotate(360deg);}
+
+/* Details */
+.sheet-details-label{
+  font-size:11px;font-weight:700;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--ink-soft);
+  padding:14px 20px 6px;
+}
+.sheet-detail-row{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 20px;border-bottom:1px solid var(--line);
+  font-size:13px;color:var(--ink-soft);
+}
+.sheet-detail-row:last-child{border-bottom:0;margin-bottom:8px;}
+.sheet-detail-row i{font-size:18px;color:var(--muted);flex-shrink:0;}
+
+/* Drag indicator hint */
+.drag-hint{
+  font-size:11px;font-weight:600;color:rgba(255,255,255,.4);
+  text-align:center;margin-top:8px;position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:center;gap:4px;
+}
+.drag-hint i{font-size:13px;}
+</style>
+</head>
+<body>
+
+<div class="offline" id="offline">⚠️ You are offline. Reconnecting…</div>
+
+<!-- NOTIF POPUP -->
+<div class="notif-popup" id="notifPopup">
+  <div class="notif-card" id="notifCard">
+    <div class="notif-icon-wrap"><i class="ph ph-info" id="notifIcon"></i></div>
+    <div class="notif-body">
+      <div class="notif-title" id="notifTitle">Notice</div>
+      <div class="notif-msg" id="notifMsg"></div>
+    </div>
+    <button class="notif-close" id="notifClose"><i class="ph ph-x"></i></button>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">
+      <svg width="22" height="22" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 24 Q22 18 32 24 Q42 30 50 24" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+        <path d="M14 33 Q22 27 32 33 Q42 39 50 33" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.85"/>
+        <path d="M14 42 Q22 36 32 42 Q42 48 50 42" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.6"/>
+      </svg>
+    </div>
+    <div class="topbar-title">NovaChat</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <button id="refreshBtn" aria-label="Refresh list"><i class="ph ph-arrows-clockwise"></i><span>Refresh</span></button>
+    <button id="themeToggle" aria-label="Toggle dark mode"><i class="ph ph-moon" id="themeIcon"></i></button>
+  </div>
+</header>
+
+<!-- PAGE -->
+<main class="page">
+
+  <!-- Search -->
+  <div class="search-section">
+    <div class="search-wrap" id="searchWrap">
+      <i class="ph ph-magnifying-glass"></i>
+      <input class="search-bar" type="search" id="searchInput" placeholder="Search by name or username…" autocomplete="off" />
+      <button class="search-clear" id="searchClear" aria-label="Clear search"><i class="ph ph-x"></i></button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all"><i class="ph ph-users"></i> All</button>
+    <button class="filter-btn" data-filter="online"><i class="ph ph-circle-wavy-check"></i> Online</button>
+    <button class="filter-btn" data-filter="following"><i class="ph ph-user-check"></i> Following</button>
+  </div>
+
+  <!-- Section header -->
+  <div class="section-header">
+    <div class="section-chip"><i class="ph ph-sparkle"></i> Suggestions for you</div>
+    <span class="people-count" id="peopleCount"></span>
+  </div>
+
+  <!-- Unified users card -->
+  <div class="users-card" id="userList">
+    <!-- populated by JS -->
+  </div>
+
+</main>
+
+<!-- BOTTOM TABS — 3 tabs, no Alerts -->
+<nav class="tabbar">
+  <a class="tab-btn" href="chats.html"><div class="tab-line"></div><i class="ph ph-chat-circle-dots"></i><span>Chats</span></a>
+  <a class="tab-btn active" href="discover.html"><div class="tab-line"></div><i class="ph ph-compass"></i><span>Discover</span></a>
+  <a class="tab-btn" href="profile.html"><div class="tab-line"></div><i class="ph ph-user-circle"></i><span>Profile</span></a>
+</nav>
+
+<!-- LOADER -->
+<div class="loader" id="loader"><div class="spin"></div></div>
+
+<!-- ====== PROFILE BOTTOM SHEET ====== -->
+<div class="sheet-overlay" id="sheetOverlay"></div>
+<div class="sheet" id="profileSheet">
+  <div class="sheet-handle" id="sheetHandle"></div>
+  <div class="sheet-scroll" id="sheetScroll">
+
+    <!-- HERO -->
+    <div class="sheet-hero" id="sheetHero">
+      <button class="sheet-close-btn" id="sheetCloseBtn"><i class="ph ph-x"></i></button>
+      <div class="sheet-avatar" id="sheetAvatar"></div>
+      <div class="sheet-name" id="sheetName">
+        <span id="sheetNameText"></span>
+        <i class="ph-fill ph-seal-check v-icon" id="sheetVerified" style="display:none;"></i>
+      </div>
+      <div class="sheet-username" id="sheetUsername"></div>
+      <div class="sheet-status" id="sheetStatus"></div>
+      <div class="drag-hint"><i class="ph ph-arrow-down"></i> Drag down to close</div>
+    </div>
+
+    <!-- FULL CONTENT -->
+    <div class="sheet-full-content" id="sheetFullContent">
+
+      <!-- Bio -->
+      <div class="sheet-bio" id="sheetBio"></div>
+
+      <!-- Stats -->
+      <div class="sheet-stats">
+        <div class="sheet-stat-island" id="statIsland1">
+          <div class="sheet-stat-val" id="sheetFollowers">—</div>
+          <div class="sheet-stat-label">Followers</div>
+        </div>
+        <div class="sheet-stat-island" id="statIsland2">
+          <div class="sheet-stat-val" id="sheetFollowing">—</div>
+          <div class="sheet-stat-label">Following</div>
+        </div>
+        <div class="sheet-stat-island" id="statIsland3">
+          <div class="sheet-stat-val" id="sheetJoined">—</div>
+          <div class="sheet-stat-label">Joined</div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="sheet-actions">
+        <button class="sheet-msg-btn" id="sheetMsgBtn">
+          <i class="ph ph-chat-circle-dots"></i> Message
+        </button>
+        <button class="sheet-follow-btn" id="sheetFollowBtn">
+          <i class="ph ph-user-plus" id="sheetFollowIcon"></i>
+          <span id="sheetFollowLabel">Follow</span>
+        </button>
+      </div>
+
+      <!-- Block & Report -->
+      <div class="sheet-danger-actions">
+        <button class="sheet-block-btn" id="sheetBlockBtn">
+          <i class="ph ph-prohibit"></i> Block
+        </button>
+        <button class="sheet-report-btn" id="sheetReportBtn">
+          <i class="ph ph-flag"></i> Report
+        </button>
+      </div>
+
+      <!-- Details -->
+      <div class="sheet-details-label">Details</div>
+      <div class="sheet-detail-row" id="sheetEmailRow" style="display:none;">
+        <i class="ph ph-at"></i>
+        <span id="sheetEmail"></span>
+      </div>
+      <div class="sheet-detail-row" id="sheetLocationRow" style="display:none;">
+        <i class="ph ph-map-pin"></i>
+        <span id="sheetLocation"></span>
+      </div>
+      <div class="sheet-detail-row">
+        <i class="ph ph-lock"></i>
+        <span id="sheetPrivacyLabel">Last seen shown to everyone</span>
+      </div>
+
+    </div><!-- /sheet-full-content -->
+  </div><!-- /sheet-scroll -->
+</div><!-- /sheet -->
+
+<!-- BLOCK CONFIRM SHEET -->
+<div class="confirm-overlay" id="blockOverlay">
+  <div class="confirm-sheet" id="blockSheet">
+    <div class="confirm-handle"></div>
+    <div class="confirm-icon block-icon"><i class="ph ph-prohibit"></i></div>
+    <div class="confirm-title" id="blockTitle">Block this person?</div>
+    <div class="confirm-sub">They won't be able to message you or see your profile. You can unblock them anytime from your Profile page.</div>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" id="blockCancel">Cancel</button>
+      <button class="confirm-primary block-primary" id="blockConfirm">Block</button>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT SHEET -->
+<div class="confirm-overlay" id="reportOverlay">
+  <div class="confirm-sheet" id="reportSheet">
+    <div class="confirm-handle"></div>
+    <div class="confirm-icon report-icon"><i class="ph ph-flag"></i></div>
+    <div class="confirm-title" id="reportTitle">Report this person</div>
+    <div class="confirm-sub">Select a reason. The person will never be notified.</div>
+    <div class="report-reasons">
+      <button class="report-reason-btn" data-reason="Spam"><i class="ph ph-envelope-simple-open"></i> Spam</button>
+      <button class="report-reason-btn" data-reason="Harassment"><i class="ph ph-hand-fist"></i> Harassment</button>
+      <button class="report-reason-btn" data-reason="Fake account"><i class="ph ph-mask-happy"></i> Fake account</button>
+      <button class="report-reason-btn" data-reason="Inappropriate content"><i class="ph ph-warning-octagon"></i> Inappropriate content</button>
+      <button class="report-reason-btn" data-reason="Other"><i class="ph ph-dots-three"></i> Other</button>
+    </div>
+    <textarea class="report-note" id="reportNote" placeholder="Add a note (optional)" rows="2"></textarea>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" id="reportCancel">Cancel</button>
+      <button class="confirm-primary report-primary" id="reportConfirm" disabled>Submit Report</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ Supabase ============ */
+const SUPABASE_URL = "https://yjfxoximfczrtfgnnqyc.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZnhveGltZmN6cnRmZ25ucXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MzAwMTksImV4cCI6MjA5NDEwNjAxOX0.rGIpoYFYZ6q6Dz_7etlEqnjKp55BeYp1Iqay-__kfjA";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ============ Helpers ============ */
+const $ = s => document.querySelector(s);
+function vibrate(ms){ navigator.vibrate && navigator.vibrate(ms); }
+function initialsOf(name){
+  if(!name) return "?";
+  return name.trim().split(/\s+/).slice(0,2).map(s=>s[0].toUpperCase()).join("");
+}
+
+/* Avatar gradient palette */
+const AVATAR_COLORS = [
+  ["#a8c4f0","#1d4ed8"], ["#c4b5fd","#7c3aed"], ["#86efac","#16a34a"],
+  ["#fca5a5","#dc2626"], ["#fde68a","#d97706"], ["#a5f3fc","#0891b2"],
+  ["#f9a8d4","#db2777"], ["#bfdbfe","#2563eb"],
+];
+function avatarColor(str){
+  let hash = 0;
+  for(let c of (str||"")) hash = (hash*31 + c.charCodeAt(0)) & 0xffffffff;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function fmtSeen(ts, isOnline, privacySettings){
+  if(isOnline) return "Online now";
+  const showLastSeen = (privacySettings && privacySettings.show_last_seen) || "everyone";
+  if(showLastSeen === "nobody") return "Last seen hidden";
+  if(!ts) return "Seen recently";
+  const d = new Date(ts), now = new Date();
+  const diff = (now - d) / 1000;
+  if(diff < 3600) return `Last seen ${Math.floor(diff/60)}m ago`;
+  if(diff < 86400) return `Last seen ${Math.floor(diff/3600)}h ago`;
+  if(diff < 172800) return "Last seen yesterday";
+  return "Last seen " + d.toLocaleDateString("en", {month:"short", day:"numeric"});
+}
+
+function fmtJoined(ts){
+  if(!ts) return "—";
+  return new Date(ts).toLocaleDateString("en", {month:"short", year:"2-digit"});
+}
+
+/* Notif popup — matched to profile.html */
+const NOTIF_CFG = {
+  success:{icon:"ph-check-circle",title:"Done!",cls:"success"},
+  error:  {icon:"ph-warning-circle",title:"Error",cls:"error"},
+  warning:{icon:"ph-warning",title:"Warning",cls:"warning"},
+  info:   {icon:"ph-info",title:"Notice",cls:"info"},
+  /* legacy aliases */
+  good:   {icon:"ph-check-circle",title:"Done!",cls:"good"},
+  bad:    {icon:"ph-warning-circle",title:"Error",cls:"bad"},
+  default:{icon:"ph-info",title:"Notice",cls:"info"},
+};
+function toast(msg, kind="default"){
+  const cfg = NOTIF_CFG[kind]||NOTIF_CFG.default;
+  $("#notifCard").className = "notif-card " + cfg.cls;
+  $("#notifIcon").className = "ph " + cfg.icon;
+  $("#notifTitle").textContent = cfg.title;
+  $("#notifMsg").textContent = msg;
+  $("#notifPopup").classList.add("show");
+  clearTimeout(window.__nt);
+  window.__nt = setTimeout(()=> $("#notifPopup").classList.remove("show"), 3000);
+}
+
+/* ============ State ============ */
+let currentUser = null;
+let allUsers = [];
+let followSet = new Set();
+let activeFilter = "all";
+let searchQ = "";
+let sheetUser = null;
+
+/* ============ Render list ============ */
+function filtered(){
+  return allUsers.filter(u => {
+    if(activeFilter === "online" && !u.is_online) return false;
+    if(activeFilter === "following" && !followSet.has(u.id)) return false;
+    if(searchQ){
+      const q = searchQ.toLowerCase();
+      const name = (u.full_name||"").toLowerCase();
+      const uname = (u.username||"").toLowerCase();
+      if(!name.includes(q) && !uname.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderList(){
+  const list = filtered();
+  const el = $("#userList");
+  const countEl = $("#peopleCount");
+  countEl.textContent = list.length + " people";
+
+  if(list.length === 0){
+    el.innerHTML = `
+      <div class="empty-state">
+        <i class="ph ph-users-three"></i>
+        <p>${activeFilter==="online" ? "No one online right now" : activeFilter==="following" ? "You're not following anyone yet" : "No users found"}</p>
+      </div>`;
+    return;
+  }
+
+  /* Build rows with stylish dividers between them */
+  const rowsHTML = list.map((u, idx) => {
+    const initials = initialsOf(u.full_name || u.username);
+    const [bg, fg] = avatarColor(u.id);
+    const isFollowing = followSet.has(u.id);
+    const isMutual = isFollowing && followSet.has(u.id) && (u._followsMe === true);
+    const seenText = fmtSeen(u.last_seen, u.is_online, u.privacy_settings);
+    const bio = u.bio ? u.bio.slice(0,40) + (u.bio.length>40?"…":"") : "";
+    const divider = idx < list.length - 1 ? `<div class="user-divider"></div>` : "";
+    const mutualTag = isMutual ? `<div class="u-mutual-tag"><i class="ph ph-arrows-left-right"></i> Mutual</div>` : "";
+    const followClass = isMutual ? "follow-btn mutual" : (isFollowing ? "follow-btn following" : "follow-btn");
+    const followIcon = isMutual ? "ph-arrows-left-right" : (isFollowing ? "ph-user-check" : "ph-user-plus");
+    const followLabel = isMutual ? "Mutual" : (isFollowing ? "Following" : "Follow");
+
+    return `
+    <div class="user-row" data-uid="${u.id}">
+      <div class="u-avatar" style="background:linear-gradient(135deg,${bg},${fg});">
+        ${u.avatar_url ? `<img src="${u.avatar_url}" alt="" onerror="this.style.display='none'" />` : initials}
+        <div class="u-dot ${u.is_online?'show':''}"></div>
+      </div>
+      <div class="u-info">
+        <div class="u-name">
+          <span class="u-name-text">${u.full_name || u.username || "NovaUser"}</span>
+        </div>
+        <div class="u-meta">@${u.username||"user"} · ${seenText}</div>
+        ${bio ? `<div class="u-bio-preview">${bio}</div>` : ""}
+        ${mutualTag}
+      </div>
+      <button class="${followClass}" data-uid="${u.id}" data-following="${isFollowing}">
+        <i class="ph ${followIcon}"></i>
+        ${followLabel}
+      </button>
+    </div>
+    ${divider}`;
+  }).join("");
+
+  el.innerHTML = rowsHTML;
+
+  /* Row click → open sheet */
+  el.querySelectorAll(".user-row").forEach(row => {
+    row.addEventListener("click", e => {
+      if(e.target.closest(".follow-btn")) return;
+      const uid = row.dataset.uid;
+      const u = allUsers.find(x=>x.id===uid);
+      if(u) openSheet(u);
+    });
+  });
+
+  /* Inline follow button */
+  el.querySelectorAll(".follow-btn").forEach(btn => {
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      const uid = btn.dataset.uid;
+      await toggleFollow(uid, btn.dataset.following==="true", btn);
+    });
+  });
+}
+
+/* ============ Follow / Unfollow ============ */
+async function toggleFollow(uid, isFollowing, btnEl){
+  vibrate(30);
+  if(isFollowing){
+    await sb.from("follows").delete()
+      .eq("follower_id", currentUser.id).eq("following_id", uid);
+    followSet.delete(uid);
+  } else {
+    await sb.from("follows").insert({ follower_id:currentUser.id, following_id:uid });
+    followSet.add(uid);
+  }
+  if(btnEl){
+    const nowFollowing = followSet.has(uid);
+    btnEl.dataset.following = nowFollowing;
+    btnEl.className = "follow-btn" + (nowFollowing?" following":"");
+    btnEl.innerHTML = `<i class="ph ${nowFollowing?'ph-user-check':'ph-user-plus'}"></i>${nowFollowing?"Following":"Follow"}`;
+  }
+  if(sheetUser && sheetUser.id === uid) updateSheetFollowBtn();
+  if(activeFilter==="following") renderList();
+}
+
+/* ============ Sheet ============ */
+function updateSheetFollowBtn(){
+  const isF = followSet.has(sheetUser.id);
+  // Check if they also follow us back (mutual)
+  const isMutual = isF && (sheetUser._followsMe === true);
+  const btn = $("#sheetFollowBtn");
+  const icon = $("#sheetFollowIcon");
+  const label = $("#sheetFollowLabel");
+  if(isMutual){
+    btn.className = "sheet-follow-btn mutual";
+    icon.className = "ph ph-arrows-left-right mutual-icon";
+    label.textContent = "Mutual";
+  } else {
+    btn.className = "sheet-follow-btn" + (isF?" following":"");
+    icon.className = "ph " + (isF?"ph-user-check":"ph-user-plus");
+    label.textContent = isF ? "Following" : "Follow";
+  }
+}
+
+async function openSheet(u){
+  sheetUser = u;
+  vibrate(20);
+
+  const initials = initialsOf(u.full_name || u.username);
+  const [bg, fg] = avatarColor(u.id);
+
+  /* Avatar */
+  const avatarEl = $("#sheetAvatar");
+  avatarEl.style.background = `linear-gradient(135deg,${bg},${fg})`;
+  avatarEl.style.color = "#fff";
+  if(u.avatar_url){
+    avatarEl.innerHTML = `<img src="${u.avatar_url}" onerror="this.style.display='none'" />` + initials;
+  } else {
+    avatarEl.textContent = initials;
+  }
+
+  const displayName = u.full_name || u.username || "NovaUser";
+  $("#sheetNameText").textContent = displayName;
+  $("#sheetVerified").style.display = "none";
+  $("#sheetUsername").textContent = "@" + (u.username||"user");
+  /* Update block/report button labels */
+  $("#sheetBlockBtn").innerHTML = `<i class="ph ph-prohibit"></i> Block ${(u.full_name||u.username||"").split(" ")[0]}`;
+  $("#sheetReportBtn").innerHTML = `<i class="ph ph-flag"></i> Report`;
+
+  const statusEl = $("#sheetStatus");
+  if(u.is_online){
+    statusEl.innerHTML = `<span class="sheet-online-dot"></span> Online now`;
+  } else {
+    statusEl.textContent = fmtSeen(u.last_seen, false, u.privacy_settings);
+  }
+
+  /* Bio */
+  const bioEl = $("#sheetBio");
+  if(u.bio){ bioEl.textContent = u.bio; bioEl.className="sheet-bio"; }
+  else { bioEl.textContent = "No bio yet"; bioEl.className="sheet-bio no-bio"; }
+
+  /* Stats */
+  $("#sheetFollowers").textContent = "…";
+  $("#sheetFollowing").textContent = "…";
+  $("#sheetJoined").textContent = fmtJoined(u.created_at);
+  sb.from("follows").select("*",{count:"exact",head:true}).eq("following_id", u.id)
+    .then(({count})=> $("#sheetFollowers").textContent = count||0);
+  sb.from("follows").select("*",{count:"exact",head:true}).eq("follower_id", u.id)
+    .then(({count})=> $("#sheetFollowing").textContent = count||0);
+
+  /* Check mutual (does this user follow me back?) */
+  sheetUser._followsMe = false;
+  sb.from("follows").select("follower_id",{count:"exact",head:true})
+    .eq("follower_id", u.id).eq("following_id", currentUser.id)
+    .then(({count})=>{
+      sheetUser._followsMe = (count||0) > 0;
+      updateSheetFollowBtn();
+    });
+
+  updateSheetFollowBtn();
+
+  /* Details */
+  const isFollowing = followSet.has(u.id);
+  const emailRow = $("#sheetEmailRow");
+  const locationRow = $("#sheetLocationRow");
+  if(u.email && isFollowing){ emailRow.style.display="flex"; $("#sheetEmail").textContent = u.email; }
+  else { emailRow.style.display="none"; }
+  if(u.location){ locationRow.style.display="flex"; $("#sheetLocation").textContent = u.location; }
+  else { locationRow.style.display="none"; }
+
+  const privacyMap = {everyone:"Last seen shown to everyone",followers:"Last seen shown to followers only",nobody:"Last seen hidden"};
+  const showLastSeen = (u.privacy_settings && u.privacy_settings.show_last_seen) || "everyone";
+  $("#sheetPrivacyLabel").textContent = privacyMap[showLastSeen] || privacyMap["everyone"];
+
+  /* Open sheet */
+  const sheet = $("#profileSheet");
+  sheet.classList.add("open");
+  $("#sheetOverlay").classList.add("show");
+  $("#sheetScroll").scrollTop = 0;
+
+  /* Animate stat islands */
+  ["statIsland1","statIsland2","statIsland3"].forEach(id => {
+    const el = $("#"+id); if(el) el.classList.remove("in");
+  });
+  ["statIsland1","statIsland2","statIsland3"].forEach((id, i) => {
+    const el = $("#"+id);
+    if(el) setTimeout(()=> el.classList.add("in"), 120 + i * 80);
+  });
+}
+
+function closeSheet(){
+  const sheet = $("#profileSheet");
+  sheet.classList.remove("open");
+  $("#sheetOverlay").classList.remove("show");
+  sheetUser = null;
+}
+
+/* ============ Block / Report ============ */
+(function(){
+  /* ---- BLOCK ---- */
+  $("#sheetBlockBtn").addEventListener("click", ()=>{
+    if(!sheetUser) return;
+    const name = sheetUser.full_name || sheetUser.username || "this person";
+    $("#blockTitle").textContent = `Block ${name}?`;
+    $("#blockOverlay").classList.add("show");
+  });
+  $("#blockCancel").addEventListener("click", ()=> $("#blockOverlay").classList.remove("show"));
+  $("#blockOverlay").addEventListener("click", e=>{ if(e.target===e.currentTarget) $("#blockOverlay").classList.remove("show"); });
+  $("#blockConfirm").addEventListener("click", async ()=>{
+    if(!sheetUser) return;
+    const btn = $("#blockConfirm");
+    btn.disabled = true; btn.textContent = "Blocking…";
+    try{
+      await sb.from("blocked_users").upsert({
+        blocker_id: currentUser.id,
+        blocked_id: sheetUser.id
+      }, { onConflict: "blocker_id,blocked_id" });
+      /* Remove from list */
+      allUsers = allUsers.filter(u=> u.id !== sheetUser.id);
+      renderList();
+      closeSheet();
+      $("#blockOverlay").classList.remove("show");
+      toast(`${sheetUser.full_name || "User"} blocked`, "success");
+      vibrate(40);
+    }catch(e){
+      toast("Failed to block — try again", "error");
+    }finally{
+      btn.disabled = false; btn.textContent = "Block";
+    }
+  });
+
+  /* ---- REPORT ---- */
+  let selectedReason = "";
+  document.querySelectorAll(".report-reason-btn").forEach(btn => {
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll(".report-reason-btn").forEach(b=> b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedReason = btn.dataset.reason;
+      $("#reportConfirm").disabled = false;
+    });
+  });
+
+  $("#sheetReportBtn").addEventListener("click", ()=>{
+    if(!sheetUser) return;
+    selectedReason = "";
+    document.querySelectorAll(".report-reason-btn").forEach(b=> b.classList.remove("selected"));
+    $("#reportNote").value = "";
+    $("#reportConfirm").disabled = true;
+    const name = sheetUser.full_name || sheetUser.username || "this person";
+    $("#reportTitle").textContent = `Report ${name}`;
+    $("#reportOverlay").classList.add("show");
+  });
+  $("#reportCancel").addEventListener("click", ()=> $("#reportOverlay").classList.remove("show"));
+  $("#reportOverlay").addEventListener("click", e=>{ if(e.target===e.currentTarget) $("#reportOverlay").classList.remove("show"); });
+  $("#reportConfirm").addEventListener("click", async ()=>{
+    if(!sheetUser || !selectedReason) return;
+    const btn = $("#reportConfirm");
+    btn.disabled = true; btn.textContent = "Submitting…";
+    try{
+      await sb.from("reports").insert({
+        reporter_id: currentUser.id,
+        reported_id: sheetUser.id,
+        reason: selectedReason,
+        note: $("#reportNote").value.trim() || null
+      });
+      $("#reportOverlay").classList.remove("show");
+      toast("Report submitted — thank you", "success");
+      vibrate(40);
+      /* Ask if they also want to block */
+      setTimeout(()=>{
+        if(sheetUser){
+          const name = sheetUser.full_name || sheetUser.username || "this person";
+          $("#blockTitle").textContent = `Also block ${name}?`;
+          $("#blockOverlay").classList.add("show");
+        }
+      }, 800);
+    }catch(e){
+      toast("Failed to submit — try again", "error");
+    }finally{
+      btn.disabled = false; btn.textContent = "Submit Report";
+    }
+  });
+})();
+
+/* ============ Drag-to-close gesture ============ */
+(function(){
+  const sheet = $("#profileSheet");
+  const overlay = $("#sheetOverlay");
+  let startY = 0, startScrollTop = 0, dragging = false, currentDY = 0;
+
+  overlay.addEventListener("click", closeSheet);
+
+  function onStart(y){
+    startY = y;
+    startScrollTop = $("#sheetScroll").scrollTop;
+    dragging = true;
+    currentDY = 0;
+    sheet.style.transition = "none";
+  }
+  function onMove(y){
+    if(!dragging) return;
+    const dy = y - startY;
+    currentDY = dy;
+    /* Only allow dragging down when scroll is at top */
+    if(dy > 0 && startScrollTop <= 0){
+      /* Natural rubber-band feel — resistance increases */
+      const drag = Math.min(dy, 400);
+      sheet.style.transform = `translateX(-50%) translateY(${drag}px)`;
+      /* Fade overlay proportionally */
+      const progress = Math.min(drag / 300, 1);
+      overlay.style.opacity = 1 - progress * 0.8;
+    } else if(dy < 0){
+      /* Slight resistance upward */
+      sheet.style.transform = `translateX(-50%) translateY(${Math.max(dy * 0.08, -10)}px)`;
+    }
+  }
+  function onEnd(y){
+    if(!dragging) return;
+    dragging = false;
+    sheet.style.transition = "";
+    overlay.style.opacity = "";
+    const dy = y - startY;
+    if(dy > 90 && startScrollTop <= 0){
+      /* Close: animate sheet off screen */
+      sheet.style.transition = "transform .35s cubic-bezier(.4,0,.2,1)";
+      sheet.style.transform = "translateX(-50%) translateY(100%)";
+      setTimeout(()=>{
+        sheet.style.transform = "";
+        closeSheet();
+      }, 350);
+    } else {
+      /* Snap back */
+      sheet.style.transform = "";
+    }
+  }
+
+  /* Touch */
+  sheet.addEventListener("touchstart", e => onStart(e.touches[0].clientY), {passive:true});
+  sheet.addEventListener("touchmove", e => onMove(e.touches[0].clientY), {passive:true});
+  sheet.addEventListener("touchend", e => onEnd(e.changedTouches[0].clientY));
+
+  /* Mouse (desktop) */
+  sheet.addEventListener("mousedown", e => onStart(e.clientY));
+  window.addEventListener("mousemove", e => { if(dragging) onMove(e.clientY); });
+  window.addEventListener("mouseup", e => { if(dragging) onEnd(e.clientY); });
+})();
+
+/* ============ Sheet action buttons ============ */
+document.addEventListener("DOMContentLoaded", ()=>{
+  function addRipple(btn, e){
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = (e.clientX || rect.left + rect.width/2) - rect.left - size/2;
+    const y = (e.clientY || rect.top + rect.height/2) - rect.top - size/2;
+    const ripple = document.createElement("span");
+    ripple.className = "btn-ripple";
+    ripple.style.cssText = `width:${size}px;height:${size}px;left:${x}px;top:${y}px`;
+    btn.appendChild(ripple);
+    ripple.addEventListener("animationend", ()=> ripple.remove());
+  }
+
+  const msgBtn = $("#sheetMsgBtn");
+  const followBtn = $("#sheetFollowBtn");
+  msgBtn.addEventListener("click", e => addRipple(msgBtn, e));
+  followBtn.addEventListener("click", e => addRipple(followBtn, e));
+
+  $("#sheetCloseBtn").addEventListener("click", closeSheet);
+  $("#sheetFollowBtn").addEventListener("click", async ()=>{
+    if(!sheetUser) return;
+    await toggleFollow(sheetUser.id, followSet.has(sheetUser.id), null);
+    updateSheetFollowBtn();
+    renderList();
+    vibrate(40);
+  });
+  $("#sheetMsgBtn").addEventListener("click", ()=>{
+    if(!sheetUser) return;
+    window.location.href = `chats.html?user=${sheetUser.id}`;
+  });
+  $("#notifClose").addEventListener("click", ()=> $("#notifPopup").classList.remove("show"));
+
+  /* Refresh button */
+  $("#refreshBtn").addEventListener("click", async ()=>{
+    const btn = $("#refreshBtn");
+    if(btn.classList.contains("spinning")) return;
+    btn.classList.add("spinning");
+    btn.disabled = true;
+    try{
+      const { data: users, error } = await sb.from("profiles")
+        .select("id,full_name,username,bio,avatar_url,is_online,last_seen,created_at,location,privacy_settings")
+        .neq("id", currentUser.id)
+        .order("is_online", {ascending:false})
+        .order("full_name");
+      if(!error){ allUsers = users || []; }
+      const { data: follows } = await sb.from("follows")
+        .select("following_id").eq("follower_id", currentUser.id);
+      followSet = new Set((follows||[]).map(f=>f.following_id));
+      renderList();
+      toast("List refreshed","good");
+      vibrate(40);
+    }catch(e){
+      toast("Refresh failed","bad");
+    }finally{
+      setTimeout(()=>{ btn.classList.remove("spinning"); btn.disabled=false; }, 520);
+    }
+  });
+});
+
+/* ============ Filters & Search ============ */
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    activeFilter = btn.dataset.filter;
+    renderList();
+  });
+});
+$("#searchInput").addEventListener("input", e=>{
+  searchQ = e.target.value.trim();
+  const wrap = $("#searchWrap");
+  if(searchQ){ wrap.classList.add("has-text"); }
+  else { wrap.classList.remove("has-text"); }
+  renderList();
+});
+$("#searchClear").addEventListener("click", ()=>{
+  $("#searchInput").value = "";
+  searchQ = "";
+  $("#searchWrap").classList.remove("has-text");
+  renderList();
+  $("#searchInput").focus();
+});
+
+/* ============ Theme ============ */
+(function(){
+  const btn = $("#themeToggle");
+  const icon = $("#themeIcon");
+  const html = document.documentElement;
+  function applyTheme(dark){
+    if(dark){ html.setAttribute("data-theme","dark"); icon.className="ph ph-sun"; }
+    else { html.removeAttribute("data-theme"); icon.className="ph ph-moon"; }
+  }
+  applyTheme(localStorage.getItem("nova-theme")==="dark");
+  btn.addEventListener("click", ()=>{
+    const isDark = html.getAttribute("data-theme")==="dark";
+    applyTheme(!isDark);
+    localStorage.setItem("nova-theme", !isDark?"dark":"light");
+    btn.classList.remove("shaking"); void btn.offsetWidth; btn.classList.add("shaking");
+    setTimeout(()=>btn.classList.remove("shaking"),400);
+  });
+})();
+
+/* ============ Auth & Load ============ */
+(async function init(){
+  const updateOffline = ()=> $("#offline").classList.toggle("show", !navigator.onLine);
+  window.addEventListener("online", updateOffline);
+  window.addEventListener("offline", updateOffline);
+  updateOffline();
+
+  if((window.location.hash||"").includes("access_token")){
+    await new Promise(r=>setTimeout(r,80));
+    history.replaceState(null,"",window.location.pathname);
+  }
+
+  const { data } = await sb.auth.getSession();
+  if(!data.session){ window.location.href="index.html"; return; }
+  currentUser = data.session.user;
+
+  const { data: users, error } = await sb.from("profiles")
+    .select("id,full_name,username,bio,avatar_url,is_online,last_seen,created_at,location,privacy_settings")
+    .neq("id", currentUser.id)
+    .order("is_online", {ascending:false})
+    .order("full_name");
+
+  if(error){ toast("Failed to load users","bad"); }
+  else { allUsers = users || []; }
+
+  const { data: follows } = await sb.from("follows")
+    .select("following_id")
+    .eq("follower_id", currentUser.id);
+  followSet = new Set((follows||[]).map(f=>f.following_id));
+
+  renderList();
+
+  $("#loader").classList.add("hide");
+  setTimeout(()=>{ const l=$("#loader"); if(l) l.remove(); },400);
+
+  /* Realtime online status */
+  sb.channel("profiles-online")
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles"}, payload=>{
+      const updated = payload.new;
+      const idx = allUsers.findIndex(u=>u.id===updated.id);
+      if(idx>-1){
+        allUsers[idx] = {...allUsers[idx], is_online:updated.is_online, last_seen:updated.last_seen};
+        renderList();
+      }
+    })
+    .subscribe();
+})();
+</script>
+</body>
+</html>
