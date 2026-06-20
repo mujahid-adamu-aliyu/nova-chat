@@ -4594,7 +4594,9 @@ window.addEventListener("popstate",e=>{
       closeCreateStory();
       loadStories();
     } catch(e){
-      console.error(e); toast("Couldn't post story");
+      } catch(e){
+  toast(e?.message || e?.error_description || JSON.stringify(e));
+  }
     } finally {
       $$("#csPostBtn").disabled = false; $$("#csPostBtn").textContent = "Share Story";
     }
