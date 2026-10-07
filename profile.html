@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<meta name="theme-color" content="#1d4ed8" />
-<title>NovaChat — Profile</title>
-<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='30' r='26' fill='%231d4ed8'/><circle cx='22' cy='30' r='3.2' fill='white'/><circle cx='32' cy='30' r='3.2' fill='white'/><circle cx='42' cy='30' r='3.2' fill='white'/><path d='M26 52 L32 60 L38 52 Z' fill='%231d4ed8'/></svg>" />
+<meta name="theme-color" content="#00A651" />
+<title>9jaTalk — Profile</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='30' r='26' fill='%2300A651'/><circle cx='22' cy='30' r='3.2' fill='white'/><circle cx='32' cy='30' r='3.2' fill='white'/><circle cx='42' cy='30' r='3.2' fill='white'/><path d='M26 52 L32 60 L38 52 Z' fill='%23C9A84C'/></svg>" />
 
 <!-- Poppins Font -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -15,31 +15,33 @@
 
 <style>
 :root{
-  --bg:#dde6f0;
-  --bg-2:#d4e2f8;
-  --card:#f0f6ff;
-  --card-2:#f8faff;
-  --ink:#0b1b3a;
-  --ink-soft:#5b6b8c;
-  --muted:#9aa6c2;
-  --line:#e3eaf6;
-  --surface:#c9dcf6;
-  --surface-2:#bcd2f0;
-  --surface-border:#a8c2e8;
-  --brand:#1d4ed8;
-  --brand-2:#3b82f6;
-  --brand-3:#60a5fa;
-  --brand-glow:rgba(29,78,216,.45);
-  --hero:#1d4ed8;
-  --hero-2:#2563eb;
+  --bg:#F5F0E8;
+  --bg-2:#EDE8DF;
+  --card:#FFFFFF;
+  --card-2:#F7F5F1;
+  --ink:#1A1A2E;
+  --ink-soft:#4D5359;
+  --muted:#6B6B80;
+  --line:#D8D4CC;
+  --surface:#EAF4EE;
+  --surface-2:#E3F5E9;
+  --surface-border:#D5E9DB;
+  --brand:#00A651;
+  --brand-2:#0F8B52;
+  --brand-3:#C9A84C;
+  --brand-glow:rgba(0,166,81,.28);
+  --hero:#183C34;
+  --hero-2:#00A651;
   --good:#22c55e;
-  --warn:#f59e0b;
+  --warn:#b7791f;
   --bad:#ef4444;
+  --gold:#C9A84C;
+  --gold-hover:#A8893E;
   --radius:18px;
   --radius-lg:24px;
-  --shadow-sm:0 8px 24px -6px rgba(15,40,120,.18);
-  --shadow:0 18px 40px -18px rgba(15,40,90,.25);
-  --shadow-lg:0 28px 70px -18px rgba(15,40,120,.35);
+  --shadow-sm:0 8px 24px -6px rgba(0, 0, 0, .08);
+  --shadow:0 18px 40px -18px rgba(17, 43, 31, .18);
+  --shadow-lg:0 28px 70px -18px rgba(17, 43, 31, .22);
   --transition:.25s cubic-bezier(.4,.0,.2,1);
   --spring:cubic-bezier(.34,1.4,.64,1);
   --glass-bg:rgba(255,255,255,0.55);
@@ -1974,57 +1976,61 @@ body.edit-mode .bio-save-btn{display:flex;}
 <style>
 /* ===== Merged-in styles from discover.html ===== */
 
-/* ====== CSS VARIABLES — matched exactly to profile.html ====== */
+/* ====== CSS VARIABLES — matched to the 9jaTalk brand ====== */
 :root{
-  --bg:#dde6f0;
-  --bg-2:#d4e2f8;
-  --card:#f0f6ff;
-  --card-2:#f8faff;
-  --ink:#0b1b3a;
-  --ink-soft:#5b6b8c;
-  --muted:#9aa6c2;
-  --line:#e3eaf6;
-  --surface:#c9dcf6;
-  --surface-2:#bcd2f0;
-  --surface-border:#a8c2e8;
-  --brand:#1d4ed8;
-  --brand-2:#3b82f6;
-  --brand-3:#60a5fa;
-  --brand-glow:rgba(29,78,216,.45);
-  --hero:#1d4ed8;
-  --hero-2:#2563eb;
+  --bg:#F5F0E8;
+  --bg-2:#EDE8DF;
+  --card:#FFFFFF;
+  --card-2:#F7F5F1;
+  --ink:#1A1A2E;
+  --ink-soft:#4D5359;
+  --muted:#6B6B80;
+  --line:#D8D4CC;
+  --surface:#EAF4EE;
+  --surface-2:#E3F5E9;
+  --surface-border:#D5E9DB;
+  --brand:#00A651;
+  --brand-2:#0F8B52;
+  --brand-3:#C9A84C;
+  --brand-glow:rgba(0,166,81,.28);
+  --hero:#183C34;
+  --hero-2:#00A651;
+  --gold:#C9A84C;
+  --gold-hover:#A8893E;
   --good:#22c55e;
-  --warn:#f59e0b;
+  --warn:#b7791f;
   --bad:#ef4444;
   --radius:18px;
   --radius-lg:24px;
-  --shadow-sm:0 8px 24px -6px rgba(15,40,120,.18);
-  --shadow:0 18px 40px -18px rgba(15,40,90,.25);
-  --shadow-lg:0 28px 70px -18px rgba(15,40,120,.35);
+  --shadow-sm:0 8px 24px -6px rgba(0, 0, 0, .08);
+  --shadow:0 18px 40px -18px rgba(17, 43, 31, .18);
+  --shadow-lg:0 28px 70px -18px rgba(17, 43, 31, .22);
   --transition:.25s cubic-bezier(.4,.0,.2,1);
   --spring:cubic-bezier(.34,1.4,.64,1);
   --glass-bg:rgba(255,255,255,0.55);
   --glass-border:rgba(255,255,255,0.80);
 }
 
-/* ====== DARK THEME — matched to profile.html ====== */
+/* ====== DARK THEME — matched to the 9jaTalk brand ====== */
 [data-theme="dark"]{
-  --bg:#0d1117;
-  --bg-2:#0f1724;
-  --card:#111827;
-  --card-2:#1a2235;
-  --ink:#ecf0f7;
-  --ink-soft:#8ea0b9;
-  --muted:#596d86;
-  --line:#1e2d42;
-  --surface:#0d1420;
-  --surface-2:#182030;
-  --surface-border:#273d56;
-  --hero:#1e3a8a;
-  --hero-2:#1d4ed8;
-  --shadow-sm:0 8px 24px -6px rgba(0,0,0,.50);
-  --shadow:0 18px 40px -18px rgba(0,0,0,.62);
-  --shadow-lg:0 28px 70px -18px rgba(0,0,0,.72);
+  --bg:#1A1D2E;
+  --bg-2:#242837;
+  --card:#242837;
+  --card-2:#2D3447;
+  --ink:#F0EEE9;
+  --ink-soft:#C5C1BA;
+  --muted:#8A8A9A;
+  --line:#3A3D50;
+  --surface:#203127;
+  --surface-2:#1B3A2F;
+  --surface-border:#345C4B;
+  --hero:#172E2A;
+  --hero-2:#00A651;
+  --gold:#C9A84C;
+  --gold-hover:#E4C66D;
+  --shadow-sm:0 8px 24px -6px rgba(0,0,0,.32);
+  --shadow:0 18px 40px -18px rgba(0,0,0,.52);
+  --shadow-lg:0 28px 70px -18px rgba(0,0,0,.62);
 }
 [data-theme="dark"] .topbar{background:#111827;border-color:#ffffff;border-top:none;border-width:2.5px;border-top-width:0;}
 [data-theme="dark"] #themeToggle{background:#0d1420;border-color:#1e3a6e;color:#60a5fa;}
@@ -3220,7 +3226,7 @@ body.edit-view-open{ overflow:hidden; }
         <path d="M14 42 Q22 36 32 42 Q42 48 50 42" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.6"/>
       </svg>
     </div>
-    <span class="topbar-title">NovaChat</span>
+    <span class="topbar-title">9jaTalk</span>
   </div>
   <div class="topbar-right">
     <button id="themeToggle" aria-label="Toggle dark mode"><i class="ph ph-moon" id="themeIcon"></i></button>
