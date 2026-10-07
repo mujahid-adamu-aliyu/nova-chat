@@ -5488,3 +5488,139 @@ body{scrollbar-width:none;}
   body[data-page="chats"] .page { max-width:1180px; }
   body[data-page="chats"] .page { grid-template-columns: 320px minmax(0,1fr); }
 }
+
+
+@media (min-width: 1100px){
+  body{
+    background:linear-gradient(180deg, #d7f7eb 0%, #bfe5d8 100%);
+    padding:28px 28px 36px;
+    display:block;
+  }
+
+  .topbar{
+    position:fixed !important;
+    top:28px !important;
+    left:130px !important;
+    right:40px !important;
+    width:auto !important;
+    max-width:none !important;
+    height:72px !important;
+    border-radius:22px 22px 0 0 !important;
+    border:1px solid rgba(26,26,46,.12) !important;
+    background:rgba(255,255,255,.8) !important;
+    box-shadow:0 12px 28px rgba(26,64,48,.08) !important;
+    transform:none !important;
+  }
+
+  .tabbar{
+    position:fixed !important;
+    left:28px !important;
+    top:50% !important;
+    bottom:auto !important;
+    transform:translateY(-50%) !important;
+    width:92px !important;
+    height:520px !important;
+    border-radius:26px !important;
+    border:1px solid rgba(26,26,46,.12) !important;
+    background:rgba(255,255,255,.8) !important;
+    box-shadow:0 18px 38px -18px rgba(14,44,32,.18) !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    justify-content:flex-start !important;
+    padding:18px 10px !important;
+    gap:10px !important;
+    overflow:hidden !important;
+  }
+
+  .tab-btn{
+    width:100% !important;
+    height:56px !important;
+    border-radius:16px !important;
+    padding:8px 0 6px !important;
+    gap:4px !important;
+    display:flex !important;
+    flex-direction:column !important;
+    justify-content:center !important;
+    color:var(--muted) !important;
+    background:transparent !important;
+  }
+
+  .tab-btn.active{
+    background:rgba(0,166,81,.09) !important;
+    color:var(--brand) !important;
+  }
+
+  .tab-btn .tab-line{ display:none !important; }
+  .tab-btn i{ font-size:22px !important; }
+  .tab-btn span{ font-size:9.5px !important; }
+
+  .page{
+    margin-left:135px !important;
+    width:calc(100% - 160px) !important;
+    max-width:none !important;
+    min-height:700px !important;
+    padding:0 0 20px !important;
+  }
+
+  body[data-page="chats"] .page{
+    display:grid !important;
+    grid-template-columns: 290px 1fr !important;
+    gap:18px !important;
+    padding:0 8px 0 0 !important;
+    background:rgba(255,255,255,.22) !important;
+    border:1px solid rgba(26,26,46,.08) !important;
+    border-radius:26px !important;
+    box-shadow:0 18px 44px -26px rgba(14,44,32,.18) !important;
+  }
+
+  body[data-page="chats"] .list-islands{
+    width:100% !important;
+    min-width:0 !important;
+    max-height:690px !important;
+    border-radius:22px !important;
+    background:#f2f7f5 !important;
+    border:1px solid rgba(26,26,46,.08) !important;
+    padding:10px 8px !important;
+    margin:0 !important;
+  }
+
+  body[data-page="chats"] .chat-view{
+    position:relative !important;
+    left:auto !important;
+    right:auto !important;
+    top:auto !important;
+    bottom:auto !important;
+    width:100% !important;
+    max-width:none !important;
+    min-height:690px !important;
+    border-radius:22px !important;
+    background:rgba(255,255,255,.78) !important;
+    border:1px solid rgba(26,26,46,.08) !important;
+    box-shadow:0 18px 50px -22px rgba(17,43,31,.18) !important;
+    transform:none !important;
+    margin:0 !important;
+  }
+
+  body[data-page="profile"] .page{
+    margin-left:135px !important;
+    width:calc(100% - 160px) !important;
+    max-width:none !important;
+    background:rgba(255,255,255,.22) !important;
+    border:1px solid rgba(26,26,46,.08) !important;
+    border-radius:26px !important;
+    box-shadow:0 18px 44px -26px rgba(14,44,32,.18) !important;
+    padding:18px !important;
+  }
+
+  body[data-page="profile"] .island,
+  body[data-page="profile"] .panel,
+  body[data-page="profile"] .card,
+  body[data-page="profile"] section{
+    border-radius:22px !important;
+    border:1px solid rgba(26,26,46,.08) !important;
+    box-shadow:0 18px 36px -22px rgba(14,44,32,.14) !important;
+  }
+
+  .notif-popup{ top:18px !important; }
+}
