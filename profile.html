@@ -408,29 +408,41 @@
   </div>
 </div>
 
-<!-- ===== Delete Account Reason Sheet (modal + blur) ===== -->
-<div class="confirm-overlay" id="deleteOverlay">
-  <div class="confirm-sheet" id="deleteReasonSheet">
-    <div class="confirm-handle"></div>
-    <div class="confirm-icon report-icon" style="background:rgba(239,68,68,.12);color:#ef4444;"><i class="ph ph-warning"></i></div>
-    <div class="confirm-title">Delete your account?</div>
-    <div class="confirm-sub">Help us understand why you're leaving. Pick a reason — your request will be reviewed and your account deleted within 24 hours.</div>
-    <div class="report-reasons" id="deleteReasonList">
-      <button class="report-reason-btn" data-reason="My account is hacked"><i class="ph ph-shield-warning"></i> My account is hacked</button>
-      <button class="report-reason-btn" data-reason="I no longer use 9jaTalk"><i class="ph ph-moon"></i> I no longer use 9jaTalk</button>
-      <button class="report-reason-btn" data-reason="Privacy concerns"><i class="ph ph-lock-key"></i> Privacy concerns</button>
-      <button class="report-reason-btn" data-reason="Too many notifications"><i class="ph ph-bell-slash"></i> Too many notifications</button>
-      <button class="report-reason-btn" data-reason="I have another account"><i class="ph ph-user-switch"></i> I have another account</button>
-      <button class="report-reason-btn" data-reason="Other"><i class="ph ph-dots-three"></i> Other</button>
+<div class="delete-request-overlay" id="deleteOverlay" aria-hidden="true">
+  <section class="delete-request-sheet" id="deleteReasonSheet" role="dialog" aria-modal="true" aria-labelledby="deleteRequestTitle" aria-describedby="deleteRequestDescription" tabindex="-1">
+    <header class="delete-request-header">
+      <div class="delete-request-icon" aria-hidden="true"><i class="ph ph-trash"></i></div>
+      <div class="delete-request-heading">
+        <div class="delete-request-eyebrow">ACCOUNT CONTROL</div>
+        <h2 id="deleteRequestTitle">Request account deletion</h2>
+        <p id="deleteRequestDescription">Tell us why you’re leaving. Your account stays active while we review the request.</p>
+      </div>
+      <button class="delete-request-close" id="deleteCloseBtn" type="button" aria-label="Close deletion request"><i class="ph ph-x"></i></button>
+    </header>
+    <div class="delete-request-body">
+      <fieldset class="delete-request-fieldset">
+        <legend>What’s the main reason?</legend>
+        <p class="delete-request-help">Choose one option. You can add more detail below.</p>
+        <div class="delete-request-reasons" id="deleteReasonList" role="group" aria-label="Deletion reason">
+          <button class="delete-reason-option" type="button" data-reason="My account is hacked" aria-pressed="false"><i class="ph ph-shield-warning"></i><span>My account is hacked</span><i class="ph ph-check-circle delete-reason-check" aria-hidden="true"></i></button>
+          <button class="delete-reason-option" type="button" data-reason="I no longer use 9jaTalk" aria-pressed="false"><i class="ph ph-moon"></i><span>I no longer use 9jaTalk</span><i class="ph ph-check-circle delete-reason-check" aria-hidden="true"></i></button>
+          <button class="delete-reason-option" type="button" data-reason="Privacy concerns" aria-pressed="false"><i class="ph ph-lock-key"></i><span>Privacy concerns</span><i class="ph ph-check-circle delete-reason-check" aria-hidden="true"></i></button>
+          <button class="delete-reason-option" type="button" data-reason="Too many notifications" aria-pressed="false"><i class="ph ph-bell-slash"></i><span>Too many notifications</span><i class="ph ph-check-circle delete-reason-check" aria-hidden="true"></i></button>
+          <button class="delete-reason-option" type="button" data-reason="I have another account" aria-pressed="false"><i class="ph ph-user-switch"></i><span>I have another account</span><i class="ph ph-check-circle delete-reason-check" aria-hidden="true"></i></button>
+          <button class="delete-reason-option" type="button" data-reason="Other" aria-pressed="false"><i class="ph ph-dots-three"></i><span>Other</span><i class="ph ph-check-circle delete-reason-check" aria-hidden="true"></i></button>
+        </div>
+      </fieldset>
+      <label class="delete-request-note-label" for="deleteReasonNote">Anything else? <span>Optional</span></label>
+      <textarea class="delete-request-note" id="deleteReasonNote" placeholder="Share any details that may help…" maxlength="500" rows="3"></textarea>
     </div>
-    <textarea class="report-note" id="deleteReasonNote" placeholder="Clarify your reason (optional)…" rows="3"></textarea>
-    <div class="confirm-actions">
-      <button class="confirm-cancel" id="deleteCancelBtn">Cancel</button>
-      <button class="confirm-primary report-primary" id="deleteConfirmBtn" style="background:#ef4444;" disabled>
-        <span class="label"><i class="ph ph-trash" style="margin-right:6px;"></i>Request Deletion</span>
+    <footer class="delete-request-actions">
+      <p class="delete-request-validation" id="deleteRequestValidation" aria-live="polite">Select a reason or add at least 4 characters in the optional note to continue.</p>
+      <button class="delete-request-submit" id="deleteConfirmBtn" type="button" disabled>
+        <i class="ph ph-paper-plane-tilt" aria-hidden="true"></i><span class="delete-submit-label">Send deletion request</span>
       </button>
-    </div>
-  </div>
+      <button class="delete-request-cancel" id="deleteCancelBtn" type="button">Keep my account</button>
+    </footer>
+  </section>
 </div>
 
 <!-- ===== Sign Out Confirmation Modal ===== -->

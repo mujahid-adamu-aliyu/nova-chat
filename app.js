@@ -942,32 +942,6 @@ document.getElementById("sheetPaste").addEventListener("click", ()=>{
   }).catch(()=>{ /* silently ignore */ });
 });
 
-function renderSocial(){
-  const pills = document.getElementById("socialPills");
-  pills.innerHTML = "";
-  const PLATFORM_NAMES = { instagram:"Instagram", x:"X", linkedin:"LinkedIn", tiktok:"TikTok", github:"GitHub" };
-  let linkedCount = 0;
-  Object.entries(SOCIAL_PLATFORMS).forEach(([key,cfg])=>{
-    const linked = !!profile.social_links[key];
-    if(linked) linkedCount++;
-    const pill = document.createElement("div");
-    pill.className = "social-pill" + (linked?" linked":"");
-    pill.innerHTML = `
-      <div class="social-pill-icon"><i class="ph ${cfg.icon}"></i></div>
-      <span class="social-pill-label">${PLATFORM_NAMES[key]||key}</span>
-    `;
-    pill.addEventListener("click", ()=>{
-      if(!linked && profile.social_links[key] === undefined || linked){
-        openSocialSheet(key);
-      } else {
-        openSocialSheet(key);
-      }
-    });
-    pills.appendChild(pill);
-  });
-  document.getElementById("socialLinkedCount").textContent = linkedCount;
-}
-
 function renderInfoRows(){
   const rows = [
     { key:"full_name",    icon:"ph-user",    label:"Name",     value:profile.full_name },
@@ -1456,53 +1430,102 @@ document.getElementById("blockedSheetOverlay").addEventListener("click", e=>{
 (function(){
   const FORMSPREE_URL = "https://formspree.io/f/mblnekvp";
   const overlay    = document.getElementById("deleteOverlay");
+  const sheet      = document.getElementById("deleteReasonSheet");
   const confirmBtn = document.getElementById("deleteConfirmBtn");
   const cancelBtn  = document.getElementById("deleteCancelBtn");
+  const closeBtn   = document.getElementById("deleteCloseBtn");
   const note       = document.getElementById("deleteReasonNote");
   const reasonList = document.getElementById("deleteReasonList");
+  const validation = document.getElementById("deleteRequestValidation");
+  const submitLabel = confirmBtn.querySelector(".delete-submit-label");
+  const defaultSubmitLabel = "Send deletion request";
   let selectedReason = null;
+  let returnFocusTo = null;
 
   function reset(){
     selectedReason = null;
     note.value = "";
     confirmBtn.disabled = true;
     confirmBtn.classList.remove("loading");
-    reasonList.querySelectorAll(".report-reason-btn")
-      .forEach(b => b.classList.remove("selected"));
+    submitLabel.textContent = defaultSubmitLabel;
+    reasonList.querySelectorAll(".delete-reason-option").forEach(button=>{
+      button.classList.remove("selected");
+      button.setAttribute("aria-pressed","false");
+    });
   }
   function refreshState(){
-    const hasReason = !!selectedReason || note.value.trim().length >= 4;
-    confirmBtn.disabled = !hasReason;
+    const hasReason = !!selectedReason;
+    const hasNote = note.value.trim().length >= 4;
+    confirmBtn.disabled = !hasReason && !hasNote;
+    validation.textContent = hasReason
+      ? "Reason selected. Your account stays active while the request is reviewed."
+      : hasNote
+        ? "Your note is ready to send as the deletion reason."
+        : "Select a reason or add at least 4 characters in the optional note to continue.";
+  }
+  function closeDialog(){
+    overlay.classList.remove("show");
+    overlay.setAttribute("aria-hidden","true");
+    document.body.classList.remove("delete-request-open");
+    reset();
+    if(returnFocusTo && returnFocusTo.isConnected) returnFocusTo.focus();
   }
 
   document.getElementById("deleteAccountBtn")
-    .addEventListener("click", () => {
+    .addEventListener("click", event => {
+      returnFocusTo = event.currentTarget;
       reset();
+      overlay.setAttribute("aria-hidden","false");
       overlay.classList.add("show");
+      document.body.classList.add("delete-request-open");
+      requestAnimationFrame(()=>sheet.focus());
     });
 
   reasonList.addEventListener("click", e => {
-    const btn = e.target.closest(".report-reason-btn");
+    const btn = e.target.closest(".delete-reason-option");
     if(!btn) return;
-    reasonList.querySelectorAll(".report-reason-btn")
-      .forEach(b => b.classList.remove("selected"));
+    reasonList.querySelectorAll(".delete-reason-option").forEach(button=>{
+      button.classList.remove("selected");
+      button.setAttribute("aria-pressed","false");
+    });
     btn.classList.add("selected");
+    btn.setAttribute("aria-pressed","true");
     selectedReason = btn.dataset.reason;
     refreshState();
   });
 
   note.addEventListener("input", refreshState);
-  cancelBtn.addEventListener("click",
-    () => overlay.classList.remove("show"));
+  cancelBtn.addEventListener("click", closeDialog);
+  closeBtn.addEventListener("click", closeDialog);
   overlay.addEventListener("click", e => {
-    if(e.target === e.currentTarget)
-      overlay.classList.remove("show");
+    if(e.target === e.currentTarget) closeDialog();
+  });
+  document.addEventListener("keydown",e=>{
+    if(!overlay.classList.contains("show")) return;
+    if(e.key==="Escape"){
+      e.preventDefault();
+      closeDialog();
+      return;
+    }
+    if(e.key==="Tab"){
+      const focusable = [...sheet.querySelectorAll('button:not(:disabled),textarea')];
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if(e.shiftKey && (document.activeElement===first || document.activeElement===sheet)){
+        e.preventDefault();
+        last.focus();
+      }else if(!e.shiftKey && document.activeElement===last){
+        e.preventDefault();
+        first.focus();
+      }
+    }
   });
 
   confirmBtn.addEventListener("click", async () => {
     if(confirmBtn.disabled) return;
     confirmBtn.classList.add("loading");
     confirmBtn.disabled = true;
+    submitLabel.textContent = "Sending request…";
     try {
       const u = (typeof currentUser !== "undefined" && currentUser)
         ? currentUser : {};
@@ -1531,8 +1554,7 @@ document.getElementById("blockedSheetOverlay").addEventListener("click", e=>{
         body: JSON.stringify(payload),
       });
       if(!res.ok) throw new Error("formspree " + res.status);
-      overlay.classList.remove("show");
-      confirmBtn.classList.remove("loading");
+      closeDialog();
       if(typeof showToast === "function"){
         showToast(
           "Request received",
@@ -1546,7 +1568,8 @@ document.getElementById("blockedSheetOverlay").addEventListener("click", e=>{
     } catch(e) {
       console.error("delete request", e);
       confirmBtn.classList.remove("loading");
-      confirmBtn.disabled = false;
+      submitLabel.textContent = defaultSubmitLabel;
+      refreshState();
       if(typeof showToast === "function")
         showToast("Couldn't submit",
           "Please try again or contact support.", "bad");
@@ -1722,6 +1745,8 @@ document.querySelectorAll(".frame-option").forEach(opt=>{
 
 /* ---- Feature 9B: Social link tap action ---- */
 function renderSocial(){
+  if(!profile) return;
+  profile.social_links = profile.social_links || {};
   const PLATFORM_NAMES = { instagram:"Instagram", x:"X", linkedin:"LinkedIn", tiktok:"TikTok", github:"GitHub" };
   const containers = ["socialPills","efSocialPills"].map(id=>document.getElementById(id)).filter(Boolean);
   let linkedCount = 0;
@@ -1738,14 +1763,12 @@ function renderSocial(){
       `;
       pill.addEventListener("click", ()=>{
         const inEditSheet = document.body.classList.contains("edit-view-open");
-        const isEditPill  = (ci === 1); // efSocialPills lives inside edit sheet
+        const isEditPill = (ci === 1);
         if(inEditSheet || isEditPill){
-          // Edit mode: keep existing edit/open chooser
           if(linked){ showSocialActionSheet(key, profile.social_links[key]); }
-          else      { openSocialSheet(key); }
+          else { openSocialSheet(key); }
           return;
         }
-        // View mode: open link directly, or toast if not provided
         if(linked){
           const url = profile.social_links[key];
           try{ window.open(url, "_blank", "noopener,noreferrer"); }
