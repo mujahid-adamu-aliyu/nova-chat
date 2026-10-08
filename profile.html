@@ -4,8 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="theme-color" content="#00A651" />
+<script>if(new URLSearchParams(location.search).has('embedded'))document.documentElement.classList.add('embedded-app');</script>
 <title>9jaTalk — Profile</title>
-<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='30' r='26' fill='%2300A651'/><circle cx='22' cy='30' r='3.2' fill='white'/><circle cx='32' cy='30' r='3.2' fill='white'/><circle cx='42' cy='30' r='3.2' fill='white'/><path d='M26 52 L32 60 L38 52 Z' fill='%23C9A84C'/></svg>" />
 
 <!-- Poppins Font -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -29,14 +29,7 @@
 
 <header class="topbar">
   <div class="topbar-left">
-    <div class="topbar-logo">
-      <svg width="22" height="22" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M14 24 Q22 18 32 24 Q42 30 50 24" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/>
-        <path d="M14 33 Q22 27 32 33 Q42 39 50 33" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.85"/>
-        <path d="M14 42 Q22 36 32 42 Q42 48 50 42" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.6"/>
-      </svg>
-    </div>
-    <span class="topbar-title">9jaTalk</span>
+    <span class="topbar-title brand-wordmark"><span class="g">9ja</span><span class="t">Talk</span></span>
   </div>
   <div class="topbar-right">
     <button id="themeToggle" aria-label="Toggle dark mode"><i class="ph ph-moon" id="themeIcon"></i></button>
@@ -257,7 +250,7 @@
   <div class="notif-denied-msg" id="notifDeniedMsg">
     ⚠️ Notifications are blocked. To enable, go to your
     browser Settings → Site Settings → Notifications and
-    allow NovaChat.
+    allow 9jaTalk.
   </div>
 
   <!-- SECURITY -->
@@ -424,7 +417,7 @@
     <div class="confirm-sub">Help us understand why you're leaving. Pick a reason — your request will be reviewed and your account deleted within 24 hours.</div>
     <div class="report-reasons" id="deleteReasonList">
       <button class="report-reason-btn" data-reason="My account is hacked"><i class="ph ph-shield-warning"></i> My account is hacked</button>
-      <button class="report-reason-btn" data-reason="I no longer use NovaChat"><i class="ph ph-moon"></i> I no longer use NovaChat</button>
+      <button class="report-reason-btn" data-reason="I no longer use 9jaTalk"><i class="ph ph-moon"></i> I no longer use 9jaTalk</button>
       <button class="report-reason-btn" data-reason="Privacy concerns"><i class="ph ph-lock-key"></i> Privacy concerns</button>
       <button class="report-reason-btn" data-reason="Too many notifications"><i class="ph ph-bell-slash"></i> Too many notifications</button>
       <button class="report-reason-btn" data-reason="I have another account"><i class="ph ph-user-switch"></i> I have another account</button>
@@ -445,7 +438,7 @@
   <div class="signout-modal-card">
     <div class="signout-modal-icon"><i class="ph ph-sign-out"></i></div>
     <div class="signout-modal-title">Sign Out?</div>
-    <div class="signout-modal-sub">You'll need to sign in again to access your NovaChat account.</div>
+    <div class="signout-modal-sub">You'll need to sign in again to access your 9jaTalk account.</div>
     <div class="signout-modal-actions">
       <button class="signout-modal-cancel" id="signoutCancel">Cancel</button>
       <button class="signout-modal-confirm" id="signoutConfirm">
@@ -507,7 +500,7 @@
     <div id="recoveryForm">
       <div class="recovery-logo"><i class="ph ph-lock-key"></i></div>
       <div class="recovery-title">Set New Password</div>
-      <div class="recovery-sub">Choose a strong password to secure your NovaChat account</div>
+      <div class="recovery-sub">Choose a strong password to secure your 9jaTalk account</div>
 
       <div class="recovery-fields">
         <!-- New password -->

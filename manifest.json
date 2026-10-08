@@ -1,26 +1,14 @@
 {
   "id": "novachat",
-  "name": "NovaChat",
-  "short_name": "NovaChat",
-  "description": "AI-powered chat application.",
+  "name": "9jaTalk",
+  "short_name": "9jaTalk",
+  "description": "9jaTalk - connect with each other.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#1d4ed8",
+  "theme_color": "#00A651",
   "orientation": "any",
   "lang": "en",
-  "categories": ["social"],
-  "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+  "categories": ["social"]
 }

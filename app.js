@@ -1,4 +1,30 @@
 
+/* ===== Wide-screen mobile-only notice ===== */
+(function(){
+  if (window.self !== window.top || window.innerWidth < 1024) return;
+  try { if (sessionStorage.getItem('9jt-wide-screen-continued') === '1') return; } catch(_) {}
+  const showNotice = ()=>{
+    let overlay = document.getElementById('desktopNotice');
+    if(!overlay){
+      overlay = document.createElement('div');
+      overlay.id = 'desktopNotice';
+      overlay.className = 'desktop-notice';
+      overlay.setAttribute('role','dialog');
+      overlay.setAttribute('aria-modal','true');
+      overlay.setAttribute('aria-labelledby','desktopNoticeTitle');
+      overlay.innerHTML = '<div class="desktop-notice-panel"><div class="desktop-notice-mark"><i class="ph-fill ph-device-mobile"></i></div><h1 id="desktopNoticeTitle">Made for your phone</h1><p>9jaTalk is designed for mobile screens. You can continue here, but the app will keep its phone-sized layout.</p><button type="button" id="desktopContinue">Continue to 9jaTalk</button></div>';
+      document.body.appendChild(overlay);
+    }
+    overlay.classList.add('show');
+    overlay.querySelector('#desktopContinue').addEventListener('click',()=>{
+      try { sessionStorage.setItem('9jt-wide-screen-continued','1'); } catch(_) {}
+      overlay.remove();
+    });
+  };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded',showNotice,{once:true});
+  else showNotice();
+})();
+
 /* ===== profile.js ===== */
 if (document.body && document.body.dataset.page === 'profile') {
 /* ===== Merged view router (WhatsApp-style tabs) ===== */
@@ -14,6 +40,9 @@ if (document.body && document.body.dataset.page === 'profile') {
     window.scrollTo(0,0);
   }
   window.switchView = show;
+  window.addEventListener('message', function(e){
+    if(e.origin===location.origin && e.data && e.data.type==='9jatalk:view' && (e.data.view==='profile'||e.data.view==='discover')) show(e.data.view);
+  });
   document.addEventListener('click', function(e){
     var t = e.target.closest && e.target.closest('[data-view-target]');
     if(t){ e.preventDefault(); show(t.getAttribute('data-view-target')); }
@@ -746,7 +775,7 @@ async function renderProviderSection() {
   providerBtn.onclick = async () => {
     if (hasGoogle && !hasEmail) {
       // "Connected" / managed state — clicking does nothing
-      toast("Password is managed by Google. Set a NovaChat password to change this.", "info", "Managed by Google");
+      toast("Password is managed by Google. Set a 9jaTalk password to change this.", "info", "Managed by Google");
       return;
     }
 
@@ -1480,7 +1509,7 @@ document.getElementById("blockedSheetOverlay").addEventListener("click", e=>{
       const p = (typeof myProfile !== "undefined" && myProfile)
         ? myProfile : {};
       const payload = {
-        _subject: "🚨 NovaChat — Account Deletion Request",
+        _subject: "🚨 9jaTalk — Account Deletion Request",
         request_type: "account_deletion",
         user_id:      u.id || "",
         email:        u.email || p.email || "",
@@ -1605,7 +1634,7 @@ document.getElementById("shareDownloadQr").addEventListener("click", ()=>{
   } else {
     a.href = img.src;
   }
-  a.download = "novachat-profile-qr.png";
+  a.download = "9jatalk-profile-qr.png";
   a.click();
   toast("QR downloaded!","good");
 });
@@ -1807,7 +1836,7 @@ async function seedDefaultFriend(newUserId) {
 
   const ADMIN_EMAIL = "mujaheedd777@gmail.com";
   const WELCOME_MESSAGES = [
-    "👋 Hey! Welcome to NovaChat! I'm Mujahid, the founder. So glad you're here!",
+    "👋 Hey! Welcome to 9jaTalk! I'm Mujahid, the founder. So glad you're here!",
     "Feel free to explore, discover people, and start chatting. If you ever need anything just message me anytime 😊🚀"
   ];
 
@@ -1883,7 +1912,7 @@ async function seedDefaultFriend(newUserId) {
 /* ============ First-time Onboarding Flashcards ============ */
 const ONB_KEY = "novachat_onboarded_v1";
 const ONB_STEPS = [
-  { icon:"ph-hand-waving",    title:"Welcome to NovaChat", desc:"Quick tour to help you get the most out of your profile." },
+  { icon:"ph-hand-waving",    title:"Welcome to 9jaTalk", desc:"Quick tour to help you get the most out of your profile." },
   { icon:"ph-user-circle",    title:"Complete Your Profile", desc:"Tap Edit Profile to add your name, username, photo, and bio." },
   { icon:"ph-share-network",  title:"Link Your Socials",  desc:"Connect Instagram, GitHub and more so friends can find you." },
   { icon:"ph-shield-check",   title:"Control Your Privacy", desc:"Choose who can message you and what others can see." },
@@ -2422,7 +2451,11 @@ document.addEventListener("DOMContentLoaded", ()=>{
   });
   $("#sheetMsgBtn").addEventListener("click", ()=>{
     if(!sheetUser) return;
-    window.location.href = `chats.html?user=${sheetUser.id}`;
+    if(window.parent!==window && new URLSearchParams(location.search).has('embedded')){
+      window.parent.postMessage({type:'9jatalk:navigate',view:'chats',userId:sheetUser.id},location.origin);
+    } else {
+      window.location.href = `chats.html?user=${sheetUser.id}`;
+    }
   });
   $("#notifClose_d").addEventListener("click", ()=> $("#notifPopup_d").classList.remove("show"));
 
@@ -4910,7 +4943,7 @@ window.addEventListener("popstate",e=>{
   /* ---- State ---- */
   let me = null;
   let myProfile = null;
-  let activeTab = "chats";        // "feed" | "chats"
+  let activeTab = "chats";        // "feed" | "chats" | "discover" | "profile"
   let feedFilter = "foryou";      // "foryou" | "following"
   let posts = [];
   let stories = [];               // grouped by user
@@ -4998,14 +5031,21 @@ window.addEventListener("popstate",e=>{
       });
     });
 
-    // Discover tab → explicit JS navigation
-    const discoverTab = document.querySelector('.tab-btn[href="profile.html#discover"]');
-    if(discoverTab){
-      discoverTab.addEventListener("click", e=>{
-        e.preventDefault();
-        window.location.href = 'profile.html#discover';
+    const profileFrame = document.getElementById('profileFrame');
+    if(profileFrame){
+      profileFrame.addEventListener('load',()=>{
+        profileFrame.contentWindow.postMessage({type:'9jatalk:view',view:activeTab==='discover'?'discover':'profile'},location.origin);
       });
     }
+    window.addEventListener('message',e=>{
+      if(e.origin!==location.origin || e.source!==profileFrame?.contentWindow || e.data?.type!=='9jatalk:navigate') return;
+      switchTab('chats');
+      if(e.data.userId) openChat(e.data.userId);
+    });
+    document.addEventListener('click',e=>{
+      const link=e.target.closest('a[href="#discover"]');
+      if(link){e.preventDefault();switchTab('discover');}
+    });
 
     // Feed segmented
     document.querySelectorAll(".feed-seg").forEach(b=>{
@@ -5092,12 +5132,18 @@ window.addEventListener("popstate",e=>{
     const t = $$("#topbarTitle");
     t.classList.add("swap");
     setTimeout(()=>{
-      t.textContent = tab==="feed" ? "Feed" : "9jaTalk";
+      t.innerHTML = tab==="chats" ? '<span class="g">9ja</span><span class="t">Talk</span>' : tab==="feed" ? "Feed" : tab==="discover" ? "Discover" : "Profile";
       t.classList.remove("swap");
     }, 180);
 
     $$("#chatsView").style.display = tab==="chats" ? "" : "none";
     $$("#feedView").style.display  = tab==="feed"  ? "" : "none";
+    const profileHost=$$("#profileHost");
+    if(profileHost) profileHost.hidden = tab!=="discover" && tab!=="profile";
+    const profileFrame=$$("#profileFrame");
+    if(profileFrame && (tab==="discover" || tab==="profile")){
+      profileFrame.contentWindow.postMessage({type:'9jatalk:view',view:tab},location.origin);
+    }
     $$("#newPostFab").style.display = tab==="feed" ? "" : "none";
 
     if(tab==="feed"){
@@ -5508,7 +5554,7 @@ window.addEventListener("popstate",e=>{
           font-size:12px;font-weight:700;color:#1d4ed8;
           letter-spacing:.5px;opacity:.7;
         `;
-        wm.textContent = '✦ Shared via NovaChat';
+        wm.textContent = '✦ Shared via 9jaTalk';
         clone.appendChild(wm);
         document.body.appendChild(clone);
         const canvas = await html2canvas(clone, {
@@ -5516,7 +5562,7 @@ window.addEventListener("popstate",e=>{
         });
         document.body.removeChild(clone);
         const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-        const filename = `novachat-post-${Date.now()}.png`;
+        const filename = `9jatalk-post-${Date.now()}.png`;
         const file = new File([blob], filename, { type:'image/png' });
         const objectUrl = URL.createObjectURL(blob);
 
@@ -5536,7 +5582,7 @@ window.addEventListener("popstate",e=>{
 
         // Try native share first (works great on mobile)
         if(navigator.canShare && navigator.canShare({ files:[file] })){
-          await navigator.share({ files:[file], title:'Check this out on NovaChat' });
+          await navigator.share({ files:[file], title:'Check this out on 9jaTalk' });
           setTimeout(()=> URL.revokeObjectURL(objectUrl), 2000);
           return;
         }
@@ -5548,7 +5594,7 @@ window.addEventListener("popstate",e=>{
         setTimeout(()=> URL.revokeObjectURL(objectUrl), 2000);
 
         setTimeout(()=>{
-          const text = encodeURIComponent('Check this out on NovaChat!');
+          const text = encodeURIComponent('Check this out on 9jaTalk!');
           const urls = {
             whatsapp:  `https://wa.me/?text=${text}`,
             instagram: `https://www.instagram.com/`,
@@ -5604,11 +5650,11 @@ window.addEventListener("popstate",e=>{
         padding: 10px 16px 14px;
         font-size: 12px;
         font-weight: 700;
-        color: #1d4ed8;
+        color: #00a651;
         letter-spacing: 0.5px;
         opacity: 0.7;
       `;
-      watermark.textContent = '✦ Shared via NovaChat';
+      watermark.textContent = '✦ Shared via 9jaTalk';
       clone.appendChild(watermark);
       document.body.appendChild(clone);
 
@@ -5622,12 +5668,12 @@ window.addEventListener("popstate",e=>{
       document.body.removeChild(clone);
 
       const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-      const filename = `novachat-post-${Date.now()}.png`;
+      const filename = `9jatalk-post-${Date.now()}.png`;
 
       // Try native share API (mobile) first, fall back to download
       if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'image/png' })] })) {
         const file = new File([blob], filename, { type: 'image/png' });
-        await navigator.share({ files: [file], title: 'NovaChat post' });
+        await navigator.share({ files: [file], title: '9jaTalk post' });
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -6074,7 +6120,7 @@ window.addEventListener("popstate",e=>{
     const t = document.getElementById("notifTitle");
     const m = document.getElementById("notifMsg");
     if(!popup){ console.log(msg); return; }
-    if(t) t.textContent = "NovaChat";
+    if(t) t.textContent = "9jaTalk";
     if(m) m.textContent = msg;
     popup.classList.add("show");
     setTimeout(()=>popup.classList.remove("show"), 2200);
@@ -6087,10 +6133,10 @@ window.addEventListener("popstate",e=>{
     "👀 Someone might be thinking about you…",
     "🔥 Your chats are getting cold bro",
     "💬 You've got people waiting to hear from you",
-    "🌟 Come check what's new on NovaChat",
+    "🌟 Come check what's new on 9jaTalk",
     "😎 Your squad is online — don't leave them hanging",
     "📲 New vibes on the feed, come see",
-    "🚀 NovaChat misses you already",
+    "🚀 9jaTalk misses you already",
     "💡 Got something on your mind? Post it",
     "🎯 Check in — someone might have replied",
     "🤙 Your chats won't read themselves bro",
@@ -6109,7 +6155,7 @@ window.addEventListener("popstate",e=>{
     "🎉 Don't miss out on what's happening",
     "🤔 Wonder what your friends are up to?",
     "💪 Stay connected — tap in real quick",
-    "🎶 New mood on NovaChat, come vibe",
+    "🎶 New mood on 9jaTalk, come vibe",
     "📬 Inbox check — you good?",
     "🛸 The feed is popping rn just saying",
     "🌍 Your world is one tap away",
@@ -6117,7 +6163,7 @@ window.addEventListener("popstate",e=>{
     "🔑 Log in and see what you've been missing",
     "🎤 Got something to say? The feed is waiting",
     "🧩 Something's missing… oh it's you",
-    "🌈 Good things happen to those who check NovaChat",
+    "🌈 Good things happen to those who check 9jaTalk",
     "🏄 Ride the wave — your squad needs you"
   ];
 
@@ -6129,20 +6175,16 @@ window.addEventListener("popstate",e=>{
   function showNudgeNotification() {
     if (!novaNotifEnabled()) return;
     const msg = NOVA_NUDGES[Math.floor(Math.random() * NOVA_NUDGES.length)];
-    new Notification('NovaChat', {
+    new Notification('9jaTalk', {
       body: msg,
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
       tag: 'nova-nudge'
     });
   }
 
   function showWelcomeNudge() {
     if (!novaNotifEnabled()) return;
-    new Notification('NovaChat', {
+    new Notification('9jaTalk', {
       body: "Notifications enabled 🔔 You're all set!",
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
       tag: 'nova-welcome'
     });
   }
@@ -6175,9 +6217,7 @@ window.addEventListener("popstate",e=>{
   function showMessageNotification(senderName, preview) {
     if (!novaNotifEnabled()) return;
     new Notification(senderName || 'New message', {
-      body: preview || 'You have a new message on NovaChat',
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
+      body: preview || 'You have a new message on 9jaTalk',
       tag: 'nova-msg-' + Date.now()
     });
   }

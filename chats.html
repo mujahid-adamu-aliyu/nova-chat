@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="theme-color" content="#00A651" />
 <title>9jaTalk — Chats</title>
-<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='30' r='26' fill='%2300A651'/><circle cx='22' cy='30' r='3.2' fill='white'/><circle cx='32' cy='30' r='3.2' fill='white'/><circle cx='42' cy='30' r='3.2' fill='white'/><path d='M26 52 L32 60 L38 52 Z' fill='%23C9A84C'/></svg>" />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -15,6 +14,15 @@
   <link rel="stylesheet" href="./app.css" />
 </head>
 <body data-page="chats">
+
+<div class="desktop-notice" id="desktopNotice" role="dialog" aria-modal="true" aria-labelledby="desktopNoticeTitle">
+  <div class="desktop-notice-panel">
+    <div class="desktop-notice-mark"><i class="ph-fill ph-device-mobile"></i></div>
+    <h1 id="desktopNoticeTitle">Made for your phone</h1>
+    <p>9jaTalk is designed for mobile screens. You can continue here, but the app will keep its phone-sized layout.</p>
+    <button type="button" id="desktopContinue">Continue to 9jaTalk</button>
+  </div>
+</div>
 
 <div class="notif-modal-overlay" id="notifPermModal">
   <div class="notif-modal">
@@ -35,7 +43,7 @@
 </div>
 
 <div class="offline" id="offline">You're offline — check your connection</div>
-<div class="loader" id="loader"><div class="nova-brand-mark"><svg width="34" height="34" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M14 24 Q22 18 32 24 Q42 30 50 24" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M14 33 Q22 27 32 33 Q42 39 50 33" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.85"/><path d="M14 42 Q22 36 32 42 Q42 48 50 42" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.6"/></svg></div></div>
+<div class="loader" id="loader"><div class="nova-brand-mark brand-wordmark"><span class="g">9ja</span><span class="t">Talk</span></div></div>
 
 <!-- ============================================================
      CHATS LIST VIEW
@@ -44,14 +52,7 @@
 <!-- TOPBAR — branded -->
 <header class="topbar">
   <div class="topbar-left">
-    <div class="topbar-logo">
-      <svg width="22" height="22" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M14 24 Q22 18 32 24 Q42 30 50 24" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/>
-        <path d="M14 33 Q22 27 32 33 Q42 39 50 33" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.85"/>
-        <path d="M14 42 Q22 36 32 42 Q42 48 50 42" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0.6"/>
-      </svg>
-    </div>
-    <div class="topbar-title" id="topbarTitle">9jaTalk</div>
+    <div class="topbar-title brand-wordmark" id="topbarTitle"><span class="g">9ja</span><span class="t">Talk</span></div>
   </div>
   <div class="topbar-right">
     <button id="themeToggle" title="Toggle theme">
@@ -101,11 +102,15 @@
 
 <!-- BOTTOM TABBAR — 4 tabs (Feed first) -->
 <nav class="tabbar">
-  <a class="tab-btn" href="#feed" data-tab="feed"><div class="tab-line"></div><i class="ph-fill ph-newspaper"></i><span>Feed</span><div class="notif-dot" id="feedNotifDot"></div></a>
-  <a class="tab-btn active" href="#chats" data-tab="chats"><div class="tab-line"></div><i class="ph-fill ph-chat-circle-dots"></i><span>Chats</span><div class="notif-dot" id="chatsNotifDot"></div></a>
-  <a class="tab-btn" href="profile.html#discover"><div class="tab-line"></div><i class="ph-fill ph-compass"></i><span>Discover</span></a>
-  <a class="tab-btn" href="profile.html"><div class="tab-line"></div><i class="ph-fill ph-user-circle"></i><span>Profile</span></a>
+  <button class="tab-btn" type="button" data-tab="feed"><div class="tab-line"></div><i class="ph-fill ph-newspaper"></i><span>Feed</span><div class="notif-dot" id="feedNotifDot"></div></button>
+  <button class="tab-btn active" type="button" data-tab="chats"><div class="tab-line"></div><i class="ph-fill ph-chat-circle-dots"></i><span>Chats</span><div class="notif-dot" id="chatsNotifDot"></div></button>
+  <button class="tab-btn" type="button" data-tab="discover"><div class="tab-line"></div><i class="ph-fill ph-compass"></i><span>Discover</span></button>
+  <button class="tab-btn" type="button" data-tab="profile"><div class="tab-line"></div><i class="ph-fill ph-user-circle"></i><span>Profile</span></button>
 </nav>
+
+<section class="profile-host" id="profileHost" aria-label="Profile and discover" hidden>
+  <iframe id="profileFrame" src="profile.html?embedded=1" title="9jaTalk profile and discover"></iframe>
+</section>
 
 
 <!-- TOAST NOTIFICATION (matches discover.html) -->
@@ -124,7 +129,7 @@
 <div class="menu-overlay" id="menuOverlay"></div>
 <div class="menu-sheet" id="menuSheet">
   <div class="menu-handle"></div>
-  <div class="menu-item" onclick="window.location.href='profile.html#discover'">
+  <div class="menu-item" onclick="document.querySelector('.tab-btn[data-tab=discover]').click()">
     <i class="ph ph-user-plus"></i> New Chat
   </div>
   <div class="menu-divider"></div>
@@ -495,7 +500,7 @@
       <div style="font-size:13px;color:var(--ink-soft);">Add a photo or write text below</div>
     </div>
     <input type="file" id="csFile" accept="image/*,video/*" hidden />
-    <div class="cs-bg" id="csBg" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);">
+    <div class="cs-bg" id="csBg" style="background:linear-gradient(135deg,#008e45,#00c853);">
       <textarea id="csText" placeholder="Type your story…" maxlength="200"></textarea>
     </div>
     <div class="cs-grad-picker" id="csGradPicker"></div>
